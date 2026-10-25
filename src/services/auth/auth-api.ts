@@ -1,12 +1,14 @@
+import { Platform } from "react-native";
+import * as Device from "expo-device";
+
 type SignInResponse = {
   token: string;
 };
 
-function getApiBaseUrl() {
+export function getApiBaseUrl() {
   const configuredUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
 
   if (!configuredUrl) {
-    //trocar por um erro amigável ao usuário final
     throw new Error(
       "Configure EXPO_PUBLIC_API_URL no arquivo .env com o endereço acessível da API.",
     );
@@ -24,7 +26,17 @@ function getApiBaseUrl() {
     );
   }
 
-  return configuredUrl.replace(/\/+$/, "");
+  let normalized = configuredUrl.replace(/\/+$/, "");
+
+  // No Emulador Android, localhost aponta para o próprio emulador.
+  // Mapeia automaticamente localhost/127.0.0.1 para 10.0.2.2 (alias do host no Android Emulator).
+  if (Platform.OS === "android" && !Device.isDevice) {
+    normalized = normalized
+      .replace("://localhost", "://10.0.2.2")
+      .replace("://127.0.0.1", "://10.0.2.2");
+  }
+
+  return normalized;
 }
 
 function isSignInResponse(value: unknown): value is SignInResponse {
