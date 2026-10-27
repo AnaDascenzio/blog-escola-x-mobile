@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -25,15 +26,18 @@ function GraduationCapIcon() {
   );
 }
 
-function EmailIcon() {
-  return <Text style={styles.emailIcon}>✉</Text>;
+function EmailIcon({ focused }: { focused?: boolean }) {
+  return (
+    <Text style={[styles.emailIcon, focused && styles.iconFocused]}>✉</Text>
+  );
 }
 
-function PasswordIcon() {
+function PasswordIcon({ focused }: { focused?: boolean }) {
+  const iconColor = focused ? "#2872F0" : "#607897";
   return (
-    <View style={styles.lockIcon} accessible={false}>
-      <View style={styles.lockShackle} />
-      <View style={styles.lockBody} />
+    <View accessible={false} style={styles.lockIcon}>
+      <View style={[styles.lockShackle, { borderColor: iconColor }]} />
+      <View style={[styles.lockBody, { borderColor: iconColor }]} />
     </View>
   );
 }
@@ -54,8 +58,12 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isEmailFocused, setIsEmailFocused] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const emailInputRef = useRef<TextInputRef>(null);
   const passwordInputRef = useRef<TextInputRef>(null);
 
   async function handleSignIn() {
@@ -90,7 +98,8 @@ export default function LoginScreen() {
   return (
     <ScrollView
       contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      keyboardShouldPersistTaps="always"
     >
       <View style={styles.content}>
         <View style={styles.card}>
@@ -102,8 +111,17 @@ export default function LoginScreen() {
 
           <View style={styles.form}>
             <Text style={styles.label}>E-mail</Text>
-            <View style={styles.inputContainer}>
-              <EmailIcon />
+            <Pressable
+              accessibilityRole="none"
+              onPress={() => emailInputRef.current?.focus()}
+              style={[
+                styles.inputContainer,
+                isEmailFocused && styles.inputContainerFocused,
+              ]}
+            >
+              <View pointerEvents="none">
+                <EmailIcon focused={isEmailFocused} />
+              </View>
               <TextInput
                 accessibilityLabel="E-mail"
                 autoCapitalize="none"
@@ -111,47 +129,64 @@ export default function LoginScreen() {
                 autoCorrect={false}
                 editable={!isSubmitting}
                 keyboardType="email-address"
+                onBlur={() => setIsEmailFocused(false)}
                 onChangeText={setEmail}
+                onFocus={() => setIsEmailFocused(true)}
                 onSubmitEditing={() => passwordInputRef.current?.focus()}
                 placeholder="aluno@escola.edu.br"
                 placeholderTextColor="#8FA5C3"
+                ref={emailInputRef}
                 returnKeyType="next"
                 style={styles.input}
                 textContentType="emailAddress"
+                underlineColorAndroid="transparent"
                 value={email}
               />
-            </View>
+            </Pressable>
 
             <Text style={styles.label}>Senha</Text>
-            <View style={styles.inputContainer}>
-              <PasswordIcon />
+            <Pressable
+              accessibilityRole="none"
+              onPress={() => passwordInputRef.current?.focus()}
+              style={[
+                styles.inputContainer,
+                isPasswordFocused && styles.inputContainerFocused,
+              ]}
+            >
+              <View pointerEvents="none">
+                <PasswordIcon focused={isPasswordFocused} />
+              </View>
               <TextInput
                 accessibilityLabel="Senha"
                 autoCapitalize="none"
-                autoComplete="current-password"
+                autoComplete="password"
                 editable={!isSubmitting}
+                onBlur={() => setIsPasswordFocused(false)}
                 onChangeText={setPassword}
+                onFocus={() => setIsPasswordFocused(true)}
                 onSubmitEditing={handleSignIn}
                 placeholder="Digite sua senha"
                 placeholderTextColor="#8FA5C3"
+                ref={passwordInputRef}
                 returnKeyType="go"
                 secureTextEntry={!isPasswordVisible}
                 style={styles.input}
                 textContentType="password"
+                underlineColorAndroid="transparent"
                 value={password}
-                ref={passwordInputRef}
               />
               <Pressable
                 accessibilityLabel={
                   isPasswordVisible ? "Ocultar senha" : "Mostrar senha"
                 }
                 accessibilityRole="button"
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 onPress={() => setIsPasswordVisible((visible) => !visible)}
                 style={styles.visibilityButton}
               >
                 <PasswordVisibilityIcon visible={isPasswordVisible} />
               </Pressable>
-            </View>
+            </Pressable>
 
             {errorMessage ? (
               <Text accessibilityRole="alert" style={styles.errorMessage}>
@@ -207,6 +242,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#58AFFF",
     backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    shadowColor: "#2F68F5",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
   brand: {
     alignItems: "center",
@@ -266,24 +307,36 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   inputContainer: {
-    minHeight: 48,
+    height: 50,
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 18,
-    paddingHorizontal: 12,
-    borderWidth: 1,
+    paddingHorizontal: 14,
+    borderWidth: 1.5,
     borderColor: "#D8E4F2",
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: "#FFFFFF",
   },
+  inputContainerFocused: {
+    borderColor: "#2872F0",
+    backgroundColor: "#FAFCFF",
+    shadowColor: "#2872F0",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 2,
+  },
   emailIcon: {
-    width: 20,
+    width: 22,
     color: "#607897",
-    fontSize: 17,
+    fontSize: 18,
     textAlign: "center",
   },
+  iconFocused: {
+    color: "#2872F0",
+  },
   lockIcon: {
-    width: 20,
+    width: 22,
     height: 20,
     alignItems: "center",
     justifyContent: "flex-end",
@@ -309,13 +362,22 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    minHeight: 44,
+    height: "100%",
+    alignSelf: "stretch",
     paddingHorizontal: 10,
     color: "#17233B",
     fontSize: 14,
+    ...Platform.select({
+      web: {
+        outlineStyle: "none" as never,
+      },
+      android: {
+        paddingVertical: 0,
+      },
+    }),
   },
   visibilityButton: {
-    width: 30,
+    width: 32,
     height: 40,
     alignItems: "center",
     justifyContent: "center",
@@ -346,12 +408,13 @@ const styles = StyleSheet.create({
     minHeight: 48,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 4,
-    borderRadius: 8,
+    marginTop: 6,
+    borderRadius: 10,
     backgroundColor: "#2F68F5",
   },
   submitButtonPressed: {
     backgroundColor: "#2056D6",
+    transform: [{ scale: 0.985 }],
   },
   submitButtonDisabled: {
     opacity: 0.7,

@@ -1,3 +1,5 @@
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { StatusBar } from "expo-status-bar";
 import { Stack } from "expo-router";
 import {
   ActivityIndicator,
@@ -38,14 +40,37 @@ function RootNavigator() {
   }
 
   return (
-    <Stack>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: "slide_from_right",
+        gestureEnabled: true,
+      }}
+    >
       <Stack.Protected guard={!session}>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="index"
+          options={{
+            headerShown: false,
+            animation: "fade",
+          }}
+        />
       </Stack.Protected>
       <Stack.Protected guard={Boolean(session)}>
         <Stack.Screen
           name="home"
-          options={{ headerShown: false }}
+          options={{
+            headerShown: false,
+            animation: "fade",
+          }}
+        />
+        <Stack.Screen
+          name="post/[id]"
+          options={{
+            headerShown: false,
+            animation: "slide_from_right",
+            gestureEnabled: true,
+          }}
         />
       </Stack.Protected>
     </Stack>
@@ -54,13 +79,19 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootNavigator />
-    </AuthProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <AuthProvider>
+        <StatusBar style="dark" />
+        <RootNavigator />
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   centered: {
     flex: 1,
     alignItems: "center",
