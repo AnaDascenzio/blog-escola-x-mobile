@@ -72,6 +72,15 @@ export interface PaginatedPosts {
   total: number;
 }
 
+export interface PostFormInput {
+  title: string;
+  content: string;
+  subject: Subject | string;
+  summary?: string;
+  imageUrl?: string;
+  link?: string;
+}
+
 function buildHeaders(token?: string | null): Record<string, string> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -80,6 +89,36 @@ function buildHeaders(token?: string | null): Record<string, string> {
     headers.Authorization = `Bearer ${token}`;
   }
   return headers;
+}
+
+async function getResponseErrorMessage(response: Response): Promise<string | null> {
+  try {
+    const body: unknown = await response.json();
+    if (
+      body &&
+      typeof body === "object" &&
+      "message" in body &&
+      typeof (body as Record<string, unknown>).message === "string"
+    ) {
+      return (body as Record<string, string>).message;
+    }
+  } catch {
+    // Corpo de erro não é JSON ou está vazio; cai para a mensagem padrão.
+  }
+  return null;
+}
+
+function fallbackActionErrorMessage(action: string, status: number): string {
+  if (status === 401) {
+    return "Sua sessão expirou. Faça login novamente.";
+  }
+  if (status === 403) {
+    return "Apenas professores podem gerenciar publicações.";
+  }
+  if (status === 404) {
+    return "Publicação não encontrada.";
+  }
+  return `Erro ao ${action} publicação (código ${status}).`;
 }
 
 export async function getPosts(
@@ -196,6 +235,85 @@ export async function getPostById(
   }
 
   return data;
+}
+
+export async function createPost(
+  data: PostFormInput,
+  token?: string | null,
+): Promise<Post> {
+  const baseUrl = getApiBaseUrl();
+  const url = `${baseUrl}/posts`;
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: buildHeaders(token),
+      body: JSON.stringify(data),
+    });
+  } catch {
+    throw new Error(
+      "Não foi possível conectar à API de publicações. Verifique sua conexão.",
+    );
+  }
+
+  if (!response.ok) {
+    const message = await getResponseErrorMessage(response);
+    throw new Error(message ?? fallbackActionErrorMessage("criar", response.status));
+  }
+
+  return (await response.json()) as Post;
+}
+
+export async function updatePost(
+  id: string,
+  data: PostFormInput,
+  token?: string | null,
+): Promise<Post> {
+  const baseUrl = getApiBaseUrl();
+  const url = `${baseUrl}/posts/${id}`;
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "PUT",
+      headers: buildHeaders(token),
+      body: JSON.stringify(data),
+    });
+  } catch {
+    throw new Error(
+      "Não foi possível conectar à API de publicações. Verifique sua conexão.",
+    );
+  }
+
+  if (!response.ok) {
+    const message = await getResponseErrorMessage(response);
+    throw new Error(message ?? fallbackActionErrorMessage("atualizar", response.status));
+  }
+
+  return (await response.json()) as Post;
+}
+
+export async function deletePost(id: string, token?: string | null): Promise<void> {
+  const baseUrl = getApiBaseUrl();
+  const url = `${baseUrl}/posts/${id}`;
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "DELETE",
+      headers: buildHeaders(token),
+    });
+  } catch {
+    throw new Error(
+      "Não foi possível conectar à API de publicações. Verifique sua conexão.",
+    );
+  }
+
+  if (!response.ok && response.status !== 204) {
+    const message = await getResponseErrorMessage(response);
+    throw new Error(message ?? fallbackActionErrorMessage("excluir", response.status));
+  }
 }
 
 export function getPostImageUrl(post?: Partial<Post> | null): string | undefined {

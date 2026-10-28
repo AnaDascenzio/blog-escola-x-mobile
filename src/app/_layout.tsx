@@ -11,8 +11,13 @@ import {
 import { AuthProvider, useAuth } from "@/context/auth-context";
 
 function RootNavigator() {
-  const { isLoading, session, initializationError, retrySessionRestore } =
-    useAuth();
+  const {
+    isLoading,
+    session,
+    initializationError,
+    isTeacher,
+    retrySessionRestore,
+  } = useAuth();
 
   if (isLoading) {
     return (
@@ -66,6 +71,32 @@ function RootNavigator() {
         />
         <Stack.Screen
           name="post/[id]"
+          options={{
+            headerShown: false,
+            animation: "slide_from_right",
+            gestureEnabled: true,
+          }}
+        />
+      </Stack.Protected>
+      <Stack.Protected guard={Boolean(session) && isTeacher}>
+        <Stack.Screen
+          name="admin/posts/index"
+          options={{
+            headerShown: false,
+            animation: "slide_from_right",
+            gestureEnabled: true,
+          }}
+        />
+        <Stack.Screen
+          name="admin/posts/new"
+          options={{
+            headerShown: false,
+            animation: "slide_from_right",
+            gestureEnabled: true,
+          }}
+        />
+        <Stack.Screen
+          name="admin/posts/[id]/edit"
           options={{
             headerShown: false,
             animation: "slide_from_right",
