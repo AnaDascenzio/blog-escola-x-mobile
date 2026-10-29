@@ -8,6 +8,7 @@ import {
   type PropsWithChildren,
 } from "react";
 import { signInWithApi } from "@/services/auth/auth-api";
+import { decodeJwtPayload, type DecodedToken } from "@/services/auth/jwt";
 import {
   clearStoredToken,
   getStoredToken,
@@ -18,6 +19,8 @@ type AuthContextValue = {
   session: string | null;
   isLoading: boolean;
   initializationError: string | null;
+  user: DecodedToken | null;
+  isTeacher: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   retrySessionRestore: () => Promise<void>;
@@ -88,11 +91,19 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setSession(null);
   }, []);
 
+  const user = useMemo(
+    () => (session ? decodeJwtPayload(session) : null),
+    [session],
+  );
+  const isTeacher = user?.role === "TEACHER";
+
   const value = useMemo(
     () => ({
       session,
       isLoading,
       initializationError,
+      user,
+      isTeacher,
       signIn,
       signOut,
       retrySessionRestore,
@@ -101,6 +112,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
       session,
       isLoading,
       initializationError,
+      user,
+      isTeacher,
       signIn,
       signOut,
       retrySessionRestore,

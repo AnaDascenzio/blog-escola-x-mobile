@@ -64,7 +64,7 @@ function SkeletonCard() {
 }
 
 export default function PostsScreen() {
-  const { session, signOut } = useAuth();
+  const { session, signOut, isTeacher } = useAuth();
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [total, setTotal] = useState(0);
@@ -180,23 +180,39 @@ export default function PostsScreen() {
             <Text style={styles.eyebrow}>PORTAL ESCOLAR</Text>
             <Text style={styles.title}>Feed de Publicações</Text>
           </View>
-          <Pressable
-            accessibilityHint="Encerra a sessão atual"
-            accessibilityLabel="Sair da conta"
-            accessibilityRole="button"
-            disabled={isSigningOut}
-            onPress={handleSignOut}
-            style={({ pressed }) => [
-              styles.signOutButton,
-              pressed && styles.buttonPressed,
-            ]}
-          >
-            {isSigningOut ? (
-              <ActivityIndicator color="#DC2626" size="small" />
-            ) : (
-              <Text style={styles.signOutButtonText}>Sair</Text>
-            )}
-          </Pressable>
+          <View style={styles.headerActions}>
+            {isTeacher ? (
+              <Pressable
+                accessibilityHint="Abre o painel administrativo de publicações"
+                accessibilityLabel="Painel Admin"
+                accessibilityRole="button"
+                onPress={() => router.push("/admin/posts")}
+                style={({ pressed }) => [
+                  styles.adminButton,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text style={styles.adminButtonText}>Painel Admin</Text>
+              </Pressable>
+            ) : null}
+            <Pressable
+              accessibilityHint="Encerra a sessão atual"
+              accessibilityLabel="Sair da conta"
+              accessibilityRole="button"
+              disabled={isSigningOut}
+              onPress={handleSignOut}
+              style={({ pressed }) => [
+                styles.signOutButton,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              {isSigningOut ? (
+                <ActivityIndicator color="#DC2626" size="small" />
+              ) : (
+                <Text style={styles.signOutButtonText}>Sair</Text>
+              )}
+            </Pressable>
+          </View>
         </View>
 
         {/* Barra de Busca */}
@@ -503,6 +519,22 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "800",
     color: "#0F172A",
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  adminButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: "#2F68F5",
+  },
+  adminButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   signOutButton: {
     paddingVertical: 6,

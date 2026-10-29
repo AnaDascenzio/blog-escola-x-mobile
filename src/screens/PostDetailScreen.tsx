@@ -73,7 +73,7 @@ function DetailSkeleton() {
 }
 
 export default function PostDetailScreen({ id }: PostDetailScreenProps) {
-  const { session } = useAuth();
+  const { session, isTeacher } = useAuth();
   const [post, setPost] = useState<Post | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -194,19 +194,41 @@ export default function PostDetailScreen({ id }: PostDetailScreenProps) {
       style={styles.container}
     >
       <Animated.View style={{ opacity: contentOpacity }}>
-        <Pressable
-          accessibilityHint="Retorna para a listagem de publicações"
-          accessibilityLabel="Voltar ao feed"
-          accessibilityRole="button"
-          onPress={() => router.back()}
-          style={({ pressed }) => [
-            styles.backButton,
-            pressed && styles.backButtonPressed,
-          ]}
-        >
-          <Text style={styles.backButtonArrow}>←</Text>
-          <Text style={styles.backButtonText}>Voltar ao feed</Text>
-        </Pressable>
+        <View style={styles.topActionsRow}>
+          <Pressable
+            accessibilityHint="Retorna para a listagem de publicações"
+            accessibilityLabel="Voltar ao feed"
+            accessibilityRole="button"
+            onPress={() => router.back()}
+            style={({ pressed }) => [
+              styles.backButton,
+              pressed && styles.backButtonPressed,
+            ]}
+          >
+            <Text style={styles.backButtonArrow}>←</Text>
+            <Text style={styles.backButtonText}>Voltar ao feed</Text>
+          </Pressable>
+
+          {isTeacher ? (
+            <Pressable
+              accessibilityHint="Edita esta publicação"
+              accessibilityLabel="Editar publicação"
+              accessibilityRole="button"
+              onPress={() =>
+                router.push({
+                  pathname: "/admin/posts/[id]/edit",
+                  params: { id: post.id },
+                })
+              }
+              style={({ pressed }) => [
+                styles.editButton,
+                pressed && styles.backButtonPressed,
+              ]}
+            >
+              <Text style={styles.editButtonText}>Editar</Text>
+            </Pressable>
+          ) : null}
+        </View>
 
         <View style={styles.metaRow}>
           <View
@@ -334,11 +356,16 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.96 }],
     opacity: 0.88,
   },
+  topActionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
   backButton: {
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-start",
-    marginBottom: 16,
     paddingVertical: 6,
     paddingHorizontal: 10,
     backgroundColor: "#FFFFFF",
@@ -355,6 +382,17 @@ const styles = StyleSheet.create({
     color: "#2F68F5",
     marginRight: 6,
     fontWeight: "600",
+  },
+  editButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: "#2F68F5",
+    borderRadius: 8,
+  },
+  editButtonText: {
+    fontSize: 14,
+    color: "#FFFFFF",
+    fontWeight: "700",
   },
   backButtonText: {
     fontSize: 14,
