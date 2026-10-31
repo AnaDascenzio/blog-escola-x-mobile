@@ -1,3 +1,12 @@
+import { useAuth } from "@/context/auth-context";
+import {
+  deletePost,
+  formatPostDate,
+  getPosts,
+  getSubjectInfo,
+  type Post,
+} from "@/services/posts/posts-api";
+import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -9,15 +18,6 @@ import {
   Text,
   View,
 } from "react-native";
-import { router } from "expo-router";
-import { useAuth } from "@/context/auth-context";
-import {
-  deletePost,
-  formatPostDate,
-  getPosts,
-  getSubjectInfo,
-  type Post,
-} from "@/services/posts/posts-api";
 
 const PAGE_SIZE = 10;
 
@@ -137,21 +137,39 @@ export default function AdminPostsScreen() {
         >
           <Text style={styles.backButtonArrow}>←</Text>
         </Pressable>
+        
         <View style={styles.headerTitles}>
           <Text style={styles.eyebrow}>PAINEL ADMINISTRATIVO</Text>
           <Text style={styles.title}>Publicações</Text>
         </View>
-        <Pressable
-          accessibilityLabel="Nova publicação"
-          accessibilityRole="button"
-          onPress={() => router.push("/admin/posts/new")}
-          style={({ pressed }) => [
-            styles.newButton,
-            pressed && styles.buttonPressed,
-          ]}
-        >
-          <Text style={styles.newButtonText}>+ Nova</Text>
-        </Pressable>
+
+        {/* Grupo de Ações do Cabeçalho */}
+        <View style={styles.headerActions}>
+          {/* Atalho para o Módulo de Alunos (Tarefa 5) */}
+          <Pressable
+            accessibilityLabel="Gerir Alunos"
+            accessibilityRole="button"
+            onPress={() => router.push("/students")}
+            style={({ pressed }) => [
+              styles.studentsButton,
+              pressed && styles.buttonPressed,
+            ]}
+          >
+            <Text style={styles.studentsButtonText}>Alunos</Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityLabel="Nova publicação"
+            accessibilityRole="button"
+            onPress={() => router.push("/admin/posts/new")}
+            style={({ pressed }) => [
+              styles.newButton,
+              pressed && styles.buttonPressed,
+            ]}
+          >
+            <Text style={styles.newButtonText}>+ Nova</Text>
+          </Pressable>
+        </View>
       </View>
 
       {isLoading && !isRefreshing ? (
@@ -330,7 +348,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingTop: 48,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#E2EBF6",
@@ -340,7 +358,7 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
+    marginRight: 10,
     backgroundColor: "#FFFFFF",
     borderRadius: 8,
     borderWidth: 1,
@@ -359,20 +377,38 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   eyebrow: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
     letterSpacing: 1,
     color: "#2F68F5",
     marginBottom: 2,
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "800",
     color: "#0F172A",
   },
+  headerActions: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+  },
+  studentsButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#2F68F5",
+  },
+  studentsButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#2F68F5",
+  },
   newButton: {
     paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     borderRadius: 8,
     backgroundColor: "#2F68F5",
   },
@@ -522,7 +558,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: 16,
+    paddingTtop: 16,
     paddingBottom: 20,
   },
   paginationButton: {
