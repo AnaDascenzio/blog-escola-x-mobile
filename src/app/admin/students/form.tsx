@@ -1,8 +1,8 @@
-import { useAuth } from '@/context/auth-context'; // Ajusta o caminho do teu auth se necessário
+import { useAuth } from '@/context/auth-context';
+import { studentsApi } from '@/services/students/students-api';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { studentsApi } from '../../services/students/students-api';
 
 export default function StudentFormScreen() {
     const router = useRouter();

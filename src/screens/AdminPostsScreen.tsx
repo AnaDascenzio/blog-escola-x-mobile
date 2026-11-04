@@ -149,7 +149,7 @@ export default function AdminPostsScreen() {
           <Pressable
             accessibilityLabel="Gerir Alunos"
             accessibilityRole="button"
-            onPress={() => router.push("/students")}
+            onPress={() => router.push("/admin/students")}
             style={({ pressed }) => [
               styles.studentsButton,
               pressed && styles.buttonPressed,

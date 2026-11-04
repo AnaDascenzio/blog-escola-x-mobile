@@ -1,5 +1,7 @@
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useAuth } from '@/context/auth-context';
+import { Student, studentsApi } from '@/services/students/students-api';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -9,8 +11,6 @@ import {
   Text,
   View
 } from 'react-native';
-import { useAuth } from '../../context/auth-context';
-import { Student, studentsApi } from '../../services/students/students-api';
 
 export default function StudentsScreen() {
   const router = useRouter();
@@ -59,11 +59,13 @@ export default function StudentsScreen() {
   };
 
   
-  useEffect(() => {
+  useFocusEffect(
+    useCallback(() => {
     if (session) {
       loadStudents(1, false, session);
     }
-  }, [session]);
+  }, [session])
+);
 
   const handleRefresh = () => {
     loadStudents(1, true, session);
@@ -130,7 +132,7 @@ export default function StudentsScreen() {
         {isTeacher && (
           <Pressable 
             style={({ pressed }) => [styles.addButton, pressed && styles.buttonPressed]} 
-            onPress={() => router.push('/students/form')}
+            onPress={() => router.push('/admin/students/form')}
           >
             <Text style={styles.addButtonText}>+ Novo Aluno</Text>
           </Pressable>
@@ -157,7 +159,7 @@ export default function StudentsScreen() {
               <View style={styles.actionsContainer}>
                 <Pressable 
                   style={({ pressed }) => [styles.editButton, pressed && styles.buttonPressed]} 
-                  onPress={() => router.push(`/students/form?id=${item.id}`)}
+                  onPress={() => router.push(`/admin/students/form?id=${item.id}`)}
                 >
                   <Text style={styles.editButtonText}>Editar</Text>
                 </Pressable>
