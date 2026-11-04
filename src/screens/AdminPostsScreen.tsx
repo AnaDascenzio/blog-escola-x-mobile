@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTtop: 16,
+    paddingTop: 16,
     paddingBottom: 20,
   },
   paginationButton: {
