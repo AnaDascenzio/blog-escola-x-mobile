@@ -38,7 +38,6 @@ export default function StudentsScreen() {
         setLoading(true);
       }
 
-      console.log('Buscando alunos com o token...');
       const response = await studentsApi.getStudents(targetPage, 10, activeSession);
 
       if (targetPage === 1) {

@@ -40,8 +40,6 @@ export const studentsApi = {
 
     const data = await response.json();
     
-    console.log('RESPOSTA COMPLETA DA API /users:', data);
-
     const usersList = data.items || data.users || data.data || data.students || (Array.isArray(data) ? data : []);
 
     const studentsList = usersList.filter((u: any) => {
