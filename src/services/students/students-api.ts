@@ -6,7 +6,6 @@ export interface Student {
   name: string;
   email: string;
   password?: string; 
-  registrationNumber?: string;
   role?: string;
 }
 
@@ -82,7 +81,6 @@ export const studentsApi = {
       name: studentData.name,
       email: studentData.email,
       password: studentData.password || '123456', // Senha padrão 
-      registrationNumber: studentData.registrationNumber,
       role: 'STUDENT',
     };
 

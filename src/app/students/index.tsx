@@ -40,7 +40,6 @@ export default function StudentsScreen() {
 
       console.log('Buscando alunos com o token...');
       const response = await studentsApi.getStudents(targetPage, 10, activeSession);
-      console.log('Alunos carregados com sucesso:', response.students);
 
       if (targetPage === 1) {
         setStudents(response.students);
@@ -152,9 +151,6 @@ export default function StudentsScreen() {
             <View style={styles.cardInfo}>
               <Text style={styles.studentName}>{item.name}</Text>
               <Text style={styles.studentEmail}>{item.email}</Text>
-              {item.registrationNumber ? (
-                <Text style={styles.studentMatricula}>Matrícula: {item.registrationNumber}</Text>
-              ) : null}
             </View>
 
             {isTeacher && (
@@ -289,11 +285,6 @@ const styles = StyleSheet.create({
     fontSize: 13, 
     color: '#64748B', 
     marginBottom: 2 
-  },
-  studentMatricula: { 
-    fontSize: 12, 
-    color: '#94A3B8',
-    fontWeight: '600'
   },
   actionsContainer: { 
     flexDirection: 'row', 

@@ -12,7 +12,6 @@ export default function StudentFormScreen() {
 
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
-    const [registrationNumber, setRegistrationNumber] = useState('');
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
@@ -25,7 +24,6 @@ export default function StudentFormScreen() {
             if (student) {
                 setName(student.name);
                 setEmail(student.email);
-                setRegistrationNumber(student.registrationNumber || '');
             }
         } catch (error) {
             console.log('Erro ao carregar dados do aluno:', error);
@@ -50,10 +48,10 @@ export default function StudentFormScreen() {
         try {
             setSubmitting(true);
             if (isEditing && studentId) {
-                await studentsApi.updateStudent(studentId, { name, email, registrationNumber }, session);
+                await studentsApi.updateStudent(studentId, { name, email }, session);
                 Alert.alert('Sucesso', 'Aluno atualizado com sucesso!');
             } else {
-                await studentsApi.createStudent({ name, email, registrationNumber }, session);
+                await studentsApi.createStudent({ name, email }, session);
                 Alert.alert('Sucesso', 'Aluno cadastrado com sucesso!');
             }
             router.back();
@@ -114,15 +112,6 @@ export default function StudentFormScreen() {
                     keyboardType="email-address"
                     value={email}
                     onChangeText={setEmail}
-                />
-
-                <Text style={styles.label}>Matrícula</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Ex: 2026001"
-                    placeholderTextColor="#94A3B8"
-                    value={registrationNumber}
-                    onChangeText={setRegistrationNumber}
                 />
 
                 <Pressable
