@@ -6,7 +6,6 @@ export interface Student {
   name: string;
   email: string;
   password?: string; 
-  registrationNumber?: string;
   role?: string;
 }
 
@@ -41,8 +40,6 @@ export const studentsApi = {
 
     const data = await response.json();
     
-    console.log('RESPOSTA COMPLETA DA API /users:', data);
-
     const usersList = data.items || data.users || data.data || data.students || (Array.isArray(data) ? data : []);
 
     const studentsList = usersList.filter((u: any) => {
@@ -82,7 +79,6 @@ export const studentsApi = {
       name: studentData.name,
       email: studentData.email,
       password: studentData.password || '123456', // Senha padrão 
-      registrationNumber: studentData.registrationNumber,
       role: 'STUDENT',
     };
 

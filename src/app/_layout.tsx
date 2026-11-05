@@ -1,6 +1,6 @@
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { StatusBar } from "expo-status-bar";
+import { AuthProvider, useAuth } from "@/context/auth-context";
 import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import {
   ActivityIndicator,
   Pressable,
@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { AuthProvider, useAuth } from "@/context/auth-context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 function RootNavigator() {
   const {
@@ -97,6 +97,23 @@ function RootNavigator() {
         />
         <Stack.Screen
           name="admin/posts/[id]/edit"
+          options={{
+            headerShown: false,
+            animation: "slide_from_right",
+            gestureEnabled: true,
+          }}
+        />
+        {/* Módulo de alunos (só professor logado acessa) */}
+        <Stack.Screen
+          name="admin/students/index"
+          options={{
+            headerShown: false,
+            animation: "slide_from_right",
+            gestureEnabled: true,
+          }}
+        />
+        <Stack.Screen
+          name="admin/students/form"
           options={{
             headerShown: false,
             animation: "slide_from_right",

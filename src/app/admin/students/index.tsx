@@ -1,5 +1,7 @@
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useAuth } from '@/context/auth-context';
+import { Student, studentsApi } from '@/services/students/students-api';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -9,8 +11,6 @@ import {
   Text,
   View
 } from 'react-native';
-import { useAuth } from '../../context/auth-context';
-import { Student, studentsApi } from '../../services/students/students-api';
 
 export default function StudentsScreen() {
   const router = useRouter();
@@ -22,6 +22,13 @@ export default function StudentsScreen() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  const sortedStudents = useMemo(
+    () =>
+    [...students].sort((a, b) => 
+    a.name.trim().localeCompare(b.name.trim(), 'pt-BR', {sensitivity: 'base'})
+  ),
+  [students]
+  );
   
   const loadStudents = async (targetPage = 1, isRefresh = false, currentSession?: string | null) => {
     const activeSession = currentSession !== undefined ? currentSession : session;
@@ -38,9 +45,7 @@ export default function StudentsScreen() {
         setLoading(true);
       }
 
-      console.log('Buscando alunos com o token...');
       const response = await studentsApi.getStudents(targetPage, 10, activeSession);
-      console.log('Alunos carregados com sucesso:', response.students);
 
       if (targetPage === 1) {
         setStudents(response.students);
@@ -60,11 +65,13 @@ export default function StudentsScreen() {
   };
 
   
-  useEffect(() => {
+  useFocusEffect(
+    useCallback(() => {
     if (session) {
       loadStudents(1, false, session);
     }
-  }, [session]);
+  }, [session])
+);
 
   const handleRefresh = () => {
     loadStudents(1, true, session);
@@ -131,7 +138,7 @@ export default function StudentsScreen() {
         {isTeacher && (
           <Pressable 
             style={({ pressed }) => [styles.addButton, pressed && styles.buttonPressed]} 
-            onPress={() => router.push('/students/form')}
+            onPress={() => router.push('/admin/students/form')}
           >
             <Text style={styles.addButtonText}>+ Novo Aluno</Text>
           </Pressable>
@@ -139,7 +146,7 @@ export default function StudentsScreen() {
       </View>
 
       <FlatList
-        data={students}
+        data={sortedStudents}
         style={styles.flatList}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
@@ -152,16 +159,13 @@ export default function StudentsScreen() {
             <View style={styles.cardInfo}>
               <Text style={styles.studentName}>{item.name}</Text>
               <Text style={styles.studentEmail}>{item.email}</Text>
-              {item.registrationNumber ? (
-                <Text style={styles.studentMatricula}>Matrícula: {item.registrationNumber}</Text>
-              ) : null}
             </View>
 
             {isTeacher && (
               <View style={styles.actionsContainer}>
                 <Pressable 
                   style={({ pressed }) => [styles.editButton, pressed && styles.buttonPressed]} 
-                  onPress={() => router.push(`/students/form?id=${item.id}`)}
+                  onPress={() => router.push(`/admin/students/form?id=${item.id}`)}
                 >
                   <Text style={styles.editButtonText}>Editar</Text>
                 </Pressable>
@@ -289,11 +293,6 @@ const styles = StyleSheet.create({
     fontSize: 13, 
     color: '#64748B', 
     marginBottom: 2 
-  },
-  studentMatricula: { 
-    fontSize: 12, 
-    color: '#94A3B8',
-    fontWeight: '600'
   },
   actionsContainer: { 
     flexDirection: 'row', 
