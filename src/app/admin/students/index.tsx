@@ -1,7 +1,7 @@
 import { useAuth } from '@/context/auth-context';
 import { Student, studentsApi } from '@/services/students/students-api';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -22,6 +22,13 @@ export default function StudentsScreen() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  const sortedStudents = useMemo(
+    () =>
+    [...students].sort((a, b) => 
+    a.name.trim().localeCompare(b.name.trim(), 'pt-BR', {sensitivity: 'base'})
+  ),
+  [students]
+  );
   
   const loadStudents = async (targetPage = 1, isRefresh = false, currentSession?: string | null) => {
     const activeSession = currentSession !== undefined ? currentSession : session;
@@ -139,7 +146,7 @@ export default function StudentsScreen() {
       </View>
 
       <FlatList
-        data={students}
+        data={sortedStudents}
         style={styles.flatList}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.5}
