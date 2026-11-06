@@ -103,24 +103,49 @@ function RootNavigator() {
             gestureEnabled: true,
           }}
         />
-
-      <Stack.Screen
-      name="admin/students/index"
-      options={{
-        headerShown: false,
-        animation: "slide_from_right",
-        gestureEnabled: true,
-      }}
-    /> 
-      <Stack.Screen
-      name="admin/students/form"
-      options={{
-        headerShown: false,
-        animation: "slide_from_right",
-        gestureEnabled: true,
-      }}
-    />
-    </Stack.Protected>
+        {/* Módulo de alunos (só professor logado acessa) */}
+        <Stack.Screen
+          name="admin/students/index"
+          options={{
+            headerShown: false,
+            animation: "slide_from_right",
+            gestureEnabled: true,
+          }}
+        />
+        <Stack.Screen
+          name="admin/students/form"
+          options={{
+            headerShown: false,
+            animation: "slide_from_right",
+            gestureEnabled: true,
+          }}
+        />
+        {/* Módulo de professores (só professor logado acessa) */}
+        <Stack.Screen
+          name="admin/teachers/index"
+          options={{
+            headerShown: false,
+            animation: "slide_from_right",
+            gestureEnabled: true,
+          }}
+        />
+        <Stack.Screen
+          name="admin/teachers/new"
+          options={{
+            headerShown: false,
+            animation: "slide_from_right",
+            gestureEnabled: true,
+          }}
+        />
+        <Stack.Screen
+          name="admin/teachers/[id]/edit"
+          options={{
+            headerShown: false,
+            animation: "slide_from_right",
+            gestureEnabled: true,
+          }}
+        />
+      </Stack.Protected>
     </Stack>
   );
 }

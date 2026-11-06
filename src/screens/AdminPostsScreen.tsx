@@ -157,6 +157,18 @@ export default function AdminPostsScreen() {
           >
             <Text style={styles.studentsButtonText}>Alunos</Text>
           </Pressable>
+          
+          <Pressable
+            accessibilityLabel="Gerenciar professores"
+            accessibilityRole="button"
+            onPress={() => router.push("/admin/teachers")}
+            style={({ pressed }) => [
+              styles.studentsButton,
+              pressed && styles.buttonPressed,
+            ]}
+          >
+            <Text style={styles.studentsButtonText}>Professores</Text>
+          </Pressable>
 
           <Pressable
             accessibilityLabel="Nova publicação"
@@ -346,6 +358,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     paddingTop: 48,
     paddingHorizontal: 16,
@@ -392,6 +405,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
+    justifyContent: "flex-end",
+    width: "100%",
+    marginTop: 12,
   },
   studentsButton: {
     paddingVertical: 8,
