@@ -100,7 +100,7 @@ export default function TeacherFormScreen({ id }: TeacherFormScreenProps) {
       if (isEditing && id) {
         const input: UpdateUserInput = {
           name: name.trim(),
-          email: email.trim().toLowerCase(),
+          email: email.trim(),
         };
         // Só envia a senha se o professor digitou uma nova.
         if (password) input.password = password;
@@ -110,7 +110,7 @@ export default function TeacherFormScreen({ id }: TeacherFormScreenProps) {
         await createUser(
           {
             name: name.trim(),
-            email: email.trim().toLowerCase(),
+            email: email.trim(),
             password,
             role: "TEACHER",
           },
