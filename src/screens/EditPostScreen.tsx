@@ -158,6 +158,7 @@ export default function EditPostScreen({ id }: EditPostScreenProps) {
       </View>
 
       <PostForm
+        authorName={post.author?.name ?? "Professor(a) responsável"}
         errorMessage={submitError}
         initialValues={{
           title: post.title,
