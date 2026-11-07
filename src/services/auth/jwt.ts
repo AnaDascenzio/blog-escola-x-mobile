@@ -51,6 +51,7 @@ function utf8BytesToString(bytes: Uint8Array): string {
 
 export interface DecodedToken {
   id: string | number;
+  name?: string;
   email: string;
   role: "TEACHER" | "STUDENT";
 }
@@ -61,7 +62,8 @@ function isDecodedToken(value: unknown): value is DecodedToken {
   return (
     (typeof candidate.id === "string" || typeof candidate.id === "number") &&
     typeof candidate.email === "string" &&
-    (candidate.role === "TEACHER" || candidate.role === "STUDENT")
+    (candidate.role === "TEACHER" || candidate.role === "STUDENT") &&
+    (candidate.name === undefined || typeof candidate.name === "string")
   );
 }
 

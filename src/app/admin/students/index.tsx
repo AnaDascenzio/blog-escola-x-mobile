@@ -1,6 +1,8 @@
 import { useAuth } from '@/context/auth-context';
+import { AdminHeader } from '@/screens/AdminHeader';
 import { Student, studentsApi } from '@/services/students/students-api';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,6 +13,7 @@ import {
   Text,
   View
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function StudentsScreen() {
   const router = useRouter();
@@ -30,48 +33,50 @@ export default function StudentsScreen() {
   [students]
   );
   
-  const loadStudents = async (targetPage = 1, isRefresh = false, currentSession?: string | null) => {
-    const activeSession = currentSession !== undefined ? currentSession : session;
-    
-    if (!activeSession) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
+  const loadStudents = useCallback(
+    async (targetPage = 1, isRefresh = false, currentSession?: string | null) => {
+      const activeSession = currentSession !== undefined ? currentSession : session;
+      
+      if (!activeSession) {
+        setLoading(false);
+        return;
       }
 
-      const response = await studentsApi.getStudents(targetPage, 10, activeSession);
+      try {
+        if (isRefresh) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
 
-      if (targetPage === 1) {
-        setStudents(response.students);
-      } else {
-        setStudents((prev) => [...prev, ...response.students]);
+        const response = await studentsApi.getStudents(targetPage, 10, activeSession);
+
+        if (targetPage === 1) {
+          setStudents(response.students);
+        } else {
+          setStudents((prev) => [...prev, ...response.students]);
+        }
+
+        setTotalPages(response.totalPages);
+        setPage(response.page);
+      } catch (error) {
+        console.log('Erro detalhado ao carregar alunos na tela:', error);
+        Alert.alert('Erro', 'Não foi possível carregar a lista de alunos.');
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-
-      setTotalPages(response.totalPages);
-      setPage(response.page);
-    } catch (error) {
-      console.log('Erro detalhado ao carregar alunos na tela:', error);
-      Alert.alert('Erro', 'Não foi possível carregar a lista de alunos.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
+    },
+    [session],
+  );
   
   useFocusEffect(
     useCallback(() => {
-    if (session) {
-      loadStudents(1, false, session);
-    }
-  }, [session])
-);
+      if (session) {
+        loadStudents(1, false, session);
+      }
+    }, [session, loadStudents])
+  );
 
   const handleRefresh = () => {
     loadStudents(1, true, session);
@@ -106,87 +111,78 @@ export default function StudentsScreen() {
     );
   };
 
-  if (loading && students.length === 0) {
-    return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#2F68F5" />
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      {/* Cabeçalho Padronizado */}
-      <View style={styles.header}>
-        <Pressable
-          accessibilityLabel="Voltar"
-          accessibilityRole="button"
-          onPress={() => router.back()}
-          style={({ pressed }) => [
-            styles.backButton,
-            pressed && styles.backButtonPressed,
-          ]}
-        >
-          <Text style={styles.backButtonArrow}>←</Text>
-        </Pressable>
-        
-        <View style={styles.headerTitles}>
-          <Text style={styles.eyebrow}>PAINEL ADMINISTRATIVO</Text>
-          <Text style={styles.title}>Módulo de Alunos</Text>
-        </View>
-
-        {isTeacher && (
-          <Pressable 
-            style={({ pressed }) => [styles.addButton, pressed && styles.buttonPressed]} 
-            onPress={() => router.push('/admin/students/form')}
-          >
-            <Text style={styles.addButtonText}>+ Novo Aluno</Text>
-          </Pressable>
-        )}
-      </View>
-
-      <FlatList
-        data={sortedStudents}
-        style={styles.flatList}
-        onEndReached={handleEndReached}
-        onEndReachedThreshold={0.5}
-        keyExtractor={(item) => item.id}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
-        contentContainerStyle={styles.listContainer}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.cardInfo}>
-              <Text style={styles.studentName}>{item.name}</Text>
-              <Text style={styles.studentEmail}>{item.email}</Text>
-            </View>
-
-            {isTeacher && (
-              <View style={styles.actionsContainer}>
-                <Pressable 
-                  style={({ pressed }) => [styles.editButton, pressed && styles.buttonPressed]} 
-                  onPress={() => router.push(`/admin/students/form?id=${item.id}`)}
-                >
-                  <Text style={styles.editButtonText}>Editar</Text>
-                </Pressable>
-
-                <Pressable 
-                  style={({ pressed }) => [styles.deleteButton, pressed && styles.buttonPressed]} 
-                  onPress={() => handleDelete(item.id)}
-                >
-                  <Text style={styles.deleteButtonText}>Excluir</Text>
-                </Pressable>
-              </View>
-            )}
-          </View>
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Nenhum aluno encontrado.</Text>
-          </View>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
+      <StatusBar style="dark" />
+      <AdminHeader
+        activeTab="students"
+        title="Alunos"
+        subtitle="Cadastre e gerencie os alunos da escola"
+        actionButton={
+          isTeacher ? (
+            <Pressable
+              accessibilityLabel="Novo Aluno"
+              accessibilityRole="button"
+              onPress={() => router.push('/admin/students/form')}
+              style={({ pressed }) => [
+                styles.addButton,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.addButtonText}>+ Novo Aluno</Text>
+            </Pressable>
+          ) : null
         }
       />
-    </View>
+
+      {loading && students.length === 0 ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#2F68F5" />
+        </View>
+      ) : (
+        <FlatList
+          data={sortedStudents}
+          style={styles.flatList}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.5}
+          keyExtractor={(item) => item.id}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          contentContainerStyle={styles.listContainer}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <View style={styles.cardInfo}>
+                <Text style={styles.studentName}>{item.name}</Text>
+                <Text style={styles.studentEmail}>{item.email}</Text>
+              </View>
+
+              {isTeacher && (
+                <View style={styles.actionsContainer}>
+                  <Pressable 
+                    style={({ pressed }) => [styles.editButton, pressed && styles.buttonPressed]} 
+                    onPress={() => router.push(`/admin/students/form?id=${item.id}`)}
+                  >
+                    <Text style={styles.editButtonText}>Editar</Text>
+                  </Pressable>
+
+                  <Pressable 
+                    style={({ pressed }) => [styles.deleteButton, pressed && styles.buttonPressed]} 
+                    onPress={() => handleDelete(item.id)}
+                  >
+                    <Text style={styles.deleteButtonText}>Excluir</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
+          )}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>Nenhum aluno encontrado.</Text>
+            </View>
+          }
+        />
+      )}
+    </SafeAreaView>
   );
 }
 
@@ -201,54 +197,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F4F8FF'
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 48,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2EBF6',
-    backgroundColor: '#FFFFFF',
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  backButtonPressed: {
-    transform: [{ scale: 0.95 }],
-    opacity: 0.82,
-  },
-  backButtonArrow: {
-    fontSize: 16,
-    color: '#2F68F5',
-    fontWeight: '600',
-  },
-  headerTitles: {
-    flex: 1,
-  },
-  eyebrow: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1,
-    color: '#2F68F5',
-    marginBottom: 2,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
-  },
   addButton: { 
     backgroundColor: '#2F68F5', 
-    paddingHorizontal: 12, 
+    paddingHorizontal: 14, 
     paddingVertical: 8, 
     borderRadius: 8 
   },

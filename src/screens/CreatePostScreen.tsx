@@ -40,6 +40,7 @@ export default function CreatePostScreen() {
           summary: values.summary || undefined,
           imageUrl: values.imageUrl || undefined,
           link: values.link || undefined,
+          imageFile: values.imageFile,
         },
         session,
       );

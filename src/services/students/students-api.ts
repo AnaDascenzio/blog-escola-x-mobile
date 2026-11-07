@@ -74,11 +74,10 @@ export const studentsApi = {
   createStudent: async (studentData: Omit<Student, 'id'>, token?: string | null): Promise<Student> => {
     const baseUrl = getApiBaseUrl();
     
-  
     const payload = {
-      name: studentData.name,
-      email: studentData.email,
-      password: studentData.password || '123456', // Senha padrão 
+      name: studentData.name.trim(),
+      email: studentData.email.trim().toLowerCase(),
+      password: studentData.password ? studentData.password.trim() : '123456',
       role: 'STUDENT',
     };
 
@@ -91,8 +90,15 @@ export const studentsApi = {
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const errorMessage = typeof data === 'string' ? data : (data.message || JSON.stringify(data));
-      throw new Error(errorMessage);
+      const rawMessage = typeof data === 'string' ? data : (data.message || JSON.stringify(data));
+      const message =
+        typeof rawMessage === 'string' &&
+        (rawMessage.includes('unique constraint') ||
+          rawMessage.includes('duplicate key') ||
+          rawMessage.includes('users_email_key'))
+          ? 'E-mail já cadastrado.'
+          : rawMessage;
+      throw new Error(message);
     }
 
     return data;
@@ -100,17 +106,37 @@ export const studentsApi = {
 
   updateStudent: async (id: string, studentData: Partial<Student>, token?: string | null): Promise<Student> => {
     const baseUrl = getApiBaseUrl();
+    const payload: Partial<Student> = { ...studentData };
+    if (payload.name !== undefined) payload.name = payload.name.trim();
+    if (payload.email !== undefined) {
+      payload.email = payload.email.trim().toLowerCase();
+    }
+    if (payload.password !== undefined) {
+      if (payload.password.trim()) {
+        payload.password = payload.password.trim();
+      } else {
+        delete payload.password;
+      }
+    }
+
     const response = await fetch(`${baseUrl}/users/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(token),
-      body: JSON.stringify(studentData),
+      body: JSON.stringify(payload),
     });
 
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const errorMessage = typeof data === 'string' ? data : (data.message || JSON.stringify(data));
-      throw new Error(errorMessage);
+      const rawMessage = typeof data === 'string' ? data : (data.message || JSON.stringify(data));
+      const message =
+        typeof rawMessage === 'string' &&
+        (rawMessage.includes('unique constraint') ||
+          rawMessage.includes('duplicate key') ||
+          rawMessage.includes('users_email_key'))
+          ? 'E-mail já cadastrado.'
+          : rawMessage;
+      throw new Error(message);
     }
 
     return data;

@@ -221,7 +221,7 @@ export default function PostDetailScreen({ id }: PostDetailScreenProps) {
               onPress={() =>
                 router.push({
                   pathname: "/admin/posts/[id]/edit",
-                  params: { id: post.id },
+                  params: { id: post.id, from: "detail" },
                 })
               }
               style={({ pressed }) => [

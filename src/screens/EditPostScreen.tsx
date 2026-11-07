@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -8,19 +9,26 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/context/auth-context";
-import { getPostById, updatePost, type Post } from "@/services/posts/posts-api";
+import {
+  deletePost,
+  getPostById,
+  updatePost,
+  type Post,
+} from "@/services/posts/posts-api";
 import PostForm, { type PostFormValues } from "@/screens/post-form/PostForm";
 
 interface EditPostScreenProps {
   id: string;
+  from?: string;
 }
 
-export default function EditPostScreen({ id }: EditPostScreenProps) {
+export default function EditPostScreen({ id, from }: EditPostScreenProps) {
   const { session } = useAuth();
   const [post, setPost] = useState<Post | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const fetchPost = useCallback((postId: string, authToken?: string | null) => {
@@ -80,6 +88,7 @@ export default function EditPostScreen({ id }: EditPostScreenProps) {
           summary: values.summary,
           imageUrl: values.imageUrl,
           link: values.link,
+          imageFile: values.imageFile,
         },
         session,
       );
@@ -92,6 +101,43 @@ export default function EditPostScreen({ id }: EditPostScreenProps) {
           : "Não foi possível salvar as alterações.",
       );
       setIsSubmitting(false);
+    }
+  }
+
+  function confirmDelete() {
+    Alert.alert(
+      "Excluir publicação",
+      `Tem certeza de que deseja excluir "${post?.title ?? "esta publicação"}"? Essa ação não pode ser desfeita.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: handleDelete,
+        },
+      ],
+    );
+  }
+
+  async function handleDelete() {
+    setIsDeleting(true);
+    try {
+      await deletePost(id, session);
+      if (from === "detail") {
+        router.replace("/home");
+      } else if (from === "admin") {
+        router.replace("/admin/posts");
+      } else {
+        router.back();
+      }
+    } catch (error) {
+      Alert.alert(
+        "Não foi possível excluir",
+        error instanceof Error
+          ? error.message
+          : "Tente novamente em instantes.",
+      );
+      setIsDeleting(false);
     }
   }
 
@@ -168,7 +214,9 @@ export default function EditPostScreen({ id }: EditPostScreenProps) {
           imageUrl: post.imageUrl ?? "",
           link: post.link ?? "",
         }}
+        isDeleting={isDeleting}
         isSubmitting={isSubmitting}
+        onDelete={confirmDelete}
         onSubmit={handleSubmit}
         submitLabel="Salvar alterações"
       />

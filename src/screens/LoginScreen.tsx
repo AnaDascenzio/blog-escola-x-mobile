@@ -67,7 +67,7 @@ export default function LoginScreen() {
   const passwordInputRef = useRef<TextInputRef>(null);
 
   async function handleSignIn() {
-    const normalizedEmail = email.trim();
+    const normalizedEmail = email.trim().toLowerCase();
 
     if (!isValidEmail(normalizedEmail)) {
       setErrorMessage("Informe um e-mail válido.");

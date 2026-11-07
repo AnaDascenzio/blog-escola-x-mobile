@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -9,7 +10,12 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { SUBJECT_MAP } from "@/services/posts/posts-api";
+import * as ImagePicker from "expo-image-picker";
+import {
+  getPostImageUrl,
+  SUBJECT_MAP,
+  type SelectedImageFile,
+} from "@/services/posts/posts-api";
 
 export interface PostFormValues {
   title: string;
@@ -18,6 +24,7 @@ export interface PostFormValues {
   subject: string;
   imageUrl: string;
   link: string;
+  imageFile?: SelectedImageFile | null;
 }
 
 interface PostFormProps {
@@ -28,6 +35,8 @@ interface PostFormProps {
   isSubmitting: boolean;
   errorMessage: string | null;
   onSubmit: (values: PostFormValues) => void;
+  onDelete?: () => void;
+  isDeleting?: boolean;
 }
 
 export default function PostForm({
@@ -37,6 +46,8 @@ export default function PostForm({
   isSubmitting,
   errorMessage,
   onSubmit,
+  onDelete,
+  isDeleting = false,
 }: PostFormProps) {
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [content, setContent] = useState(initialValues?.content ?? "");
@@ -44,7 +55,55 @@ export default function PostForm({
   const [subject, setSubject] = useState(initialValues?.subject ?? "");
   const [imageUrl, setImageUrl] = useState(initialValues?.imageUrl ?? "");
   const [link, setLink] = useState(initialValues?.link ?? "");
+  const [selectedFile, setSelectedFile] = useState<SelectedImageFile | null>(
+    null,
+  );
+  const [showUrlInput, setShowUrlInput] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  async function handlePickImage() {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const extension = asset.uri.split(".").pop()?.split("?")[0] || "jpg";
+        const fileName = asset.fileName || `upload_${Date.now()}.${extension}`;
+        const mimeType =
+          asset.mimeType ||
+          (extension.toLowerCase() === "png"
+            ? "image/png"
+            : extension.toLowerCase() === "webp"
+              ? "image/webp"
+              : "image/jpeg");
+
+        setSelectedFile({
+          uri: asset.uri,
+          name: fileName,
+          mimeType,
+          base64: asset.base64,
+          file: (asset as { file?: unknown }).file,
+        });
+        setValidationError(null);
+      }
+    } catch {
+      setValidationError("Não foi possível acessar a galeria de fotos.");
+    }
+  }
+
+  function handleRemoveImage() {
+    setSelectedFile(null);
+    setImageUrl("");
+  }
+
+  const previewUri =
+    selectedFile?.uri || (imageUrl ? getPostImageUrl({ imageUrl }) : null);
 
   function handleSubmit() {
     const trimmedTitle = title.trim();
@@ -73,6 +132,7 @@ export default function PostForm({
       subject,
       imageUrl: imageUrl.trim(),
       link: link.trim(),
+      imageFile: selectedFile,
     });
   }
 
@@ -163,19 +223,77 @@ export default function PostForm({
         value={content}
       />
 
-      <Text style={styles.label}>URL da imagem de capa (opcional)</Text>
-      <TextInput
-        accessibilityLabel="URL da imagem de capa"
-        autoCapitalize="none"
-        autoCorrect={false}
-        editable={!isSubmitting}
-        keyboardType="url"
-        onChangeText={setImageUrl}
-        placeholder="https://..."
-        placeholderTextColor="#94A3B8"
-        style={styles.input}
-        value={imageUrl}
-      />
+      <Text style={styles.label}>Imagem de capa (opcional)</Text>
+      {previewUri ? (
+        <View style={styles.imagePreviewContainer}>
+          <Image
+            resizeMode="cover"
+            source={{ uri: previewUri }}
+            style={styles.imagePreview}
+          />
+          <Pressable
+            accessibilityLabel="Remover imagem"
+            accessibilityRole="button"
+            disabled={isSubmitting}
+            onPress={handleRemoveImage}
+            style={({ pressed }) => [
+              styles.removeImageButton,
+              pressed && { opacity: 0.7 },
+            ]}
+          >
+            <Text style={styles.removeImageText}>✕ Remover imagem</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.uploadContainer}>
+          <Pressable
+            accessibilityHint="Toque para abrir a galeria e escolher uma imagem"
+            accessibilityLabel="Selecionar arquivo do dispositivo"
+            accessibilityRole="button"
+            disabled={isSubmitting}
+            onPress={handlePickImage}
+            style={({ pressed }) => [
+              styles.uploadZone,
+              pressed && styles.uploadZonePressed,
+            ]}
+          >
+            <Text style={styles.uploadIcon}>📁</Text>
+            <Text style={styles.uploadTitle}>
+              Selecionar imagem do dispositivo
+            </Text>
+            <Text style={styles.uploadSubtitle}>
+              Compatível com Android, iOS e Web (PNG, JPG, WEBP • máx. 5MB)
+            </Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setShowUrlInput((prev) => !prev)}
+            style={styles.toggleUrlButton}
+          >
+            <Text style={styles.toggleUrlText}>
+              {showUrlInput
+                ? "▲ Ocultar campo de URL externa"
+                : "▼ Ou inserir URL externa da imagem"}
+            </Text>
+          </Pressable>
+
+          {showUrlInput ? (
+            <TextInput
+              accessibilityLabel="URL da imagem de capa"
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!isSubmitting}
+              keyboardType="url"
+              onChangeText={setImageUrl}
+              placeholder="https://..."
+              placeholderTextColor="#94A3B8"
+              style={[styles.input, { marginTop: 8 }]}
+              value={imageUrl}
+            />
+          ) : null}
+        </View>
+      )}
 
       <Text style={styles.label}>Link relacionado (opcional)</Text>
       <TextInput
@@ -199,12 +317,12 @@ export default function PostForm({
 
       <Pressable
         accessibilityRole="button"
-        disabled={isSubmitting}
+        disabled={isSubmitting || isDeleting}
         onPress={handleSubmit}
         style={({ pressed }) => [
           styles.submitButton,
-          pressed && !isSubmitting && styles.submitButtonPressed,
-          isSubmitting && styles.submitButtonDisabled,
+          pressed && !isSubmitting && !isDeleting && styles.submitButtonPressed,
+          (isSubmitting || isDeleting) && styles.submitButtonDisabled,
         ]}
       >
         {isSubmitting ? (
@@ -213,6 +331,25 @@ export default function PostForm({
           <Text style={styles.submitButtonText}>{submitLabel}</Text>
         )}
       </Pressable>
+
+      {onDelete ? (
+        <Pressable
+          accessibilityRole="button"
+          disabled={isSubmitting || isDeleting}
+          onPress={onDelete}
+          style={({ pressed }) => [
+            styles.deleteButton,
+            pressed && !isSubmitting && !isDeleting && styles.deleteButtonPressed,
+            (isSubmitting || isDeleting) && styles.deleteButtonDisabled,
+          ]}
+        >
+          {isDeleting ? (
+            <ActivityIndicator color="#DC2626" />
+          ) : (
+            <Text style={styles.deleteButtonText}>Excluir publicação</Text>
+          )}
+        </Pressable>
+      ) : null}
     </ScrollView>
   );
 }
@@ -313,5 +450,97 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "700",
+  },
+  deleteButton: {
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 12,
+    borderRadius: 10,
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1.5,
+    borderColor: "#FECACA",
+  },
+  deleteButtonPressed: {
+    backgroundColor: "#FEE2E2",
+    transform: [{ scale: 0.985 }],
+  },
+  deleteButtonDisabled: {
+    opacity: 0.5,
+  },
+  deleteButtonText: {
+    color: "#DC2626",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  imagePreviewContainer: {
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1.5,
+    borderColor: "#D8E4F2",
+    backgroundColor: "#F8FAFC",
+    marginBottom: 8,
+  },
+  imagePreview: {
+    width: "100%",
+    height: 180,
+    backgroundColor: "#E2E8F0",
+  },
+  removeImageButton: {
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FEF2F2",
+    borderTopWidth: 1,
+    borderTopColor: "#FECACA",
+  },
+  removeImageText: {
+    color: "#DC2626",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  uploadContainer: {
+    marginBottom: 4,
+  },
+  uploadZone: {
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    borderColor: "#2F68F5",
+    borderRadius: 12,
+    backgroundColor: "#F4F8FF",
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  uploadZonePressed: {
+    backgroundColor: "#EBF3FF",
+    transform: [{ scale: 0.99 }],
+  },
+  uploadIcon: {
+    fontSize: 28,
+    marginBottom: 6,
+  },
+  uploadTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#2F68F5",
+    marginBottom: 2,
+    textAlign: "center",
+  },
+  uploadSubtitle: {
+    fontSize: 11,
+    color: "#64748B",
+    textAlign: "center",
+  },
+  toggleUrlButton: {
+    paddingVertical: 8,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  toggleUrlText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#64748B",
   },
 });

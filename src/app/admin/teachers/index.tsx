@@ -1,4 +1,5 @@
 import { useAuth } from "@/context/auth-context";
+import { AdminHeader } from "@/screens/AdminHeader";
 import {
   deactivateUser,
   listUsers,
@@ -6,6 +7,7 @@ import {
 } from "@/services/users/users-api";
 import { confirmAction, showMessage } from "@/utils/dialogs";
 import { router, useFocusEffect } from "expo-router";
+import { StatusBar } from "expo-status-bar";
 import { useCallback, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -15,6 +17,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const PAGE_SIZE = 10;
 
@@ -135,32 +138,26 @@ export default function TeachersListScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Pressable
-          accessibilityLabel="Voltar"
-          accessibilityRole="button"
-          onPress={() => router.back()}
-          style={({ pressed }) => [
-            styles.backButton,
-            pressed && styles.pressed,
-          ]}
-        >
-          <Text style={styles.backButtonArrow}>←</Text>
-        </Pressable>
-        <View style={styles.headerTitles}>
-          <Text style={styles.eyebrow}>PAINEL ADMINISTRATIVO</Text>
-          <Text style={styles.title}>Professores</Text>
-        </View>
-        <Pressable
-          accessibilityLabel="Novo professor"
-          accessibilityRole="button"
-          onPress={() => router.push("/admin/teachers/new")}
-          style={({ pressed }) => [styles.newButton, pressed && styles.pressed]}
-        >
-          <Text style={styles.newButtonText}>+ Novo</Text>
-        </Pressable>
-      </View>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
+      <StatusBar style="dark" />
+      <AdminHeader
+        activeTab="teachers"
+        title="Professores"
+        subtitle="Cadastre e gerencie o corpo docente da escola"
+        actionButton={
+          <Pressable
+            accessibilityLabel="Novo professor"
+            accessibilityRole="button"
+            onPress={() => router.push("/admin/teachers/new")}
+            style={({ pressed }) => [
+              styles.newButton,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={styles.newButtonText}>+ Novo Professor</Text>
+          </Pressable>
+        }
+      />
 
       {loading && teachers.length === 0 ? (
         <View style={styles.centered}>
@@ -226,45 +223,15 @@ export default function TeachersListScreen() {
           }
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F4F8FF" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingTop: 48,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2EBF6",
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 10,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  backButtonArrow: { fontSize: 16, color: "#2F68F5", fontWeight: "600" },
-  headerTitles: { flex: 1 },
-  eyebrow: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 1,
-    color: "#2F68F5",
-    marginBottom: 2,
-  },
-  title: { fontSize: 18, fontWeight: "800", color: "#0F172A" },
   newButton: {
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     borderRadius: 8,
     backgroundColor: "#2F68F5",
   },

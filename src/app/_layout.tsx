@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 function RootNavigator() {
   const {
@@ -50,6 +51,7 @@ function RootNavigator() {
         headerShown: false,
         animation: "slide_from_right",
         gestureEnabled: true,
+        contentStyle: { backgroundColor: "#F4F8FF" },
       }}
     >
       <Stack.Protected guard={!session}>
@@ -83,8 +85,8 @@ function RootNavigator() {
           name="admin/posts/index"
           options={{
             headerShown: false,
-            animation: "slide_from_right",
-            gestureEnabled: true,
+            animation: "fade",
+            animationDuration: 200,
           }}
         />
         <Stack.Screen
@@ -108,8 +110,8 @@ function RootNavigator() {
           name="admin/students/index"
           options={{
             headerShown: false,
-            animation: "slide_from_right",
-            gestureEnabled: true,
+            animation: "fade",
+            animationDuration: 200,
           }}
         />
         <Stack.Screen
@@ -125,8 +127,8 @@ function RootNavigator() {
           name="admin/teachers/index"
           options={{
             headerShown: false,
-            animation: "slide_from_right",
-            gestureEnabled: true,
+            animation: "fade",
+            animationDuration: 200,
           }}
         />
         <Stack.Screen
@@ -153,10 +155,12 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={styles.root}>
-      <AuthProvider>
-        <StatusBar style="dark" />
-        <RootNavigator />
-      </AuthProvider>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <StatusBar style="dark" />
+          <RootNavigator />
+        </AuthProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
