@@ -6,8 +6,8 @@ import {
   getSubjectInfo,
   type Post,
 } from "@/services/posts/posts-api";
-import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -41,9 +41,16 @@ export default function AdminPostsScreen() {
       getPosts(authToken, currentPage, PAGE_SIZE)
         .then((response) => {
           if (isMounted) {
+            const nextTotal = response.total ?? 0;
             setPosts(response.post ?? []);
-            setTotal(response.total ?? 0);
+            setTotal(nextTotal);
             setErrorMessage(null);
+
+            // A página pode deixar de existir (ex.: excluiu o último post dela).
+            const lastPage = Math.ceil(nextTotal / PAGE_SIZE) || 1;
+            if (currentPage > lastPage) {
+              setPage(lastPage);
+            }
           }
         })
         .catch((error: unknown) => {
@@ -69,9 +76,12 @@ export default function AdminPostsScreen() {
     [],
   );
 
-  useEffect(() => {
-    return fetchPosts(page, session);
-  }, [fetchPosts, page, session]);
+  // Recarrega ao voltar para a tela (ex.: depois de criar ou editar um post).
+  useFocusEffect(
+    useCallback(() => {
+      return fetchPosts(page, session);
+    }, [fetchPosts, page, session]),
+  );
 
   function handleRefresh() {
     setIsRefreshing(true);

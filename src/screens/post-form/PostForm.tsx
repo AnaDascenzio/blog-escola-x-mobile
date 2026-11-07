@@ -22,6 +22,8 @@ export interface PostFormValues {
 
 interface PostFormProps {
   initialValues?: Partial<PostFormValues>;
+  // Somente exibição: o back-end define o autor pelo token de quem cria o post.
+  authorName: string;
   submitLabel: string;
   isSubmitting: boolean;
   errorMessage: string | null;
@@ -30,6 +32,7 @@ interface PostFormProps {
 
 export default function PostForm({
   initialValues,
+  authorName,
   submitLabel,
   isSubmitting,
   errorMessage,
@@ -91,6 +94,16 @@ export default function PostForm({
         style={styles.input}
         value={title}
       />
+
+      <Text style={styles.label}>Autor</Text>
+      <View style={[styles.input, styles.readOnlyField]}>
+        <Text numberOfLines={1} style={styles.readOnlyText}>
+          {authorName}
+        </Text>
+      </View>
+      <Text style={styles.hint}>
+        Preenchido automaticamente e não pode ser alterado.
+      </Text>
 
       <Text style={styles.label}>Matéria</Text>
       <View style={styles.subjectGrid}>
@@ -231,6 +244,18 @@ const styles = StyleSheet.create({
         outlineStyle: "none" as never,
       },
     }),
+  },
+  readOnlyField: {
+    backgroundColor: "#EEF3FA",
+  },
+  readOnlyText: {
+    fontSize: 14,
+    color: "#475569",
+  },
+  hint: {
+    marginTop: 6,
+    fontSize: 12,
+    color: "#64748B",
   },
   multilineInput: {
     minHeight: 72,

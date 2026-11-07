@@ -214,27 +214,40 @@ export async function getPostById(
   // Se a API não incluiu os dados completos do autor no GET /posts/:id,
   // busca o usuário correspondente pelo authorId para exibir o nome correto
   if (!data.author?.name && data.authorId) {
-    try {
-      const userResponse = await fetch(`${baseUrl}/users/${data.authorId}`, {
-        method: "GET",
-        headers: buildHeaders(token),
-      });
-
-      if (userResponse.ok) {
-        const userData = (await userResponse.json()) as PostAuthor;
-        data.author = {
-          id: userData.id ?? data.authorId,
-          name: userData.name,
-          email: userData.email,
-          role: userData.role,
-        };
-      }
-    } catch {
-      // Ignora erro de enriquecimento secundário
+    const author = await getPostAuthor(data.authorId, token);
+    if (author) {
+      data.author = author;
     }
   }
 
   return data;
+}
+
+// Busca os dados do autor. Retorna null se falhar, pois é só informação de exibição.
+export async function getPostAuthor(
+  authorId: string,
+  token?: string | null,
+): Promise<PostAuthor | null> {
+  try {
+    const response = await fetch(`${getApiBaseUrl()}/users/${authorId}`, {
+      method: "GET",
+      headers: buildHeaders(token),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const userData = (await response.json()) as PostAuthor;
+    return {
+      id: userData.id ?? authorId,
+      name: userData.name,
+      email: userData.email,
+      role: userData.role,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function createPost(
