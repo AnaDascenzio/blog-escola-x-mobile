@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useAuth } from "@/context/auth-context";
 import {
   calculateReadingTime,
@@ -89,6 +89,7 @@ export default function PostDetailScreen({ id }: PostDetailScreenProps) {
         if (isMounted) {
           setPost(data);
           setErrorMessage(null);
+          setHasImageError(false);
           Animated.timing(contentOpacity, {
             toValue: 1,
             duration: 350,
@@ -116,10 +117,13 @@ export default function PostDetailScreen({ id }: PostDetailScreenProps) {
     };
   }, [contentOpacity]);
 
-  useEffect(() => {
-    if (!id) return;
-    return fetchPost(id, session);
-  }, [id, session, fetchPost]);
+  // Recarrega ao voltar para a tela (ex.: depois de editar o post).
+  useFocusEffect(
+    useCallback(() => {
+      if (!id) return;
+      return fetchPost(id, session);
+    }, [id, session, fetchPost]),
+  );
 
   function handleRetry() {
     setIsLoading(true);

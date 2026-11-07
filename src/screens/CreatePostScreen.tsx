@@ -1,14 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/context/auth-context";
-import { createPost } from "@/services/posts/posts-api";
+import { createPost, getPostAuthor } from "@/services/posts/posts-api";
 import PostForm, { type PostFormValues } from "@/screens/post-form/PostForm";
 
 export default function CreatePostScreen() {
-  const { session } = useAuth();
+  const { session, user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [authorName, setAuthorName] = useState<string | null>(null);
+
+  // O token não traz o nome do usuário, então ele é buscado na API.
+  useEffect(() => {
+    if (!user) return;
+    let isMounted = true;
+
+    getPostAuthor(String(user.id), session).then((author) => {
+      if (isMounted && author?.name) {
+        setAuthorName(author.name);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user, session]);
 
   async function handleSubmit(values: PostFormValues) {
     setIsSubmitting(true);
@@ -59,6 +76,7 @@ export default function CreatePostScreen() {
       </View>
 
       <PostForm
+        authorName={authorName ?? user?.email ?? "Professor(a) responsável"}
         errorMessage={errorMessage}
         isSubmitting={isSubmitting}
         onSubmit={handleSubmit}
