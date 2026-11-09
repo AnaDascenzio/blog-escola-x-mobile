@@ -1,12 +1,12 @@
 import { useAuth } from '@/context/auth-context';
 import { AdminHeader } from '@/screens/AdminHeader';
 import { Student, studentsApi } from '@/services/students/students-api';
+import { confirmAction, showMessage } from '@/utils/dialogs';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Pressable,
   StyleSheet,
@@ -61,7 +61,7 @@ export default function StudentsScreen() {
         setPage(response.page);
       } catch (error) {
         console.log('Erro detalhado ao carregar alunos na tela:', error);
-        Alert.alert('Erro', 'Não foi possível carregar a lista de alunos.');
+        showMessage('Erro', 'Não foi possível carregar a lista de alunos.');
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -88,27 +88,21 @@ export default function StudentsScreen() {
   };
 
   const handleDelete = async (id: string) => {
-    Alert.alert(
-      'Confirmar Exclusão',
-      'Tens a certeza que pretendes remover este aluno?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Excluir', 
-          style: 'destructive', 
-          onPress: async () => {
-            try {
-              await studentsApi.deleteStudent(id, session);
-              Alert.alert('Sucesso', 'Aluno excluído com sucesso.');
-              loadStudents(1, false, session);
-            } catch (error) {
-              console.log('Erro ao excluir aluno:', error);
-              Alert.alert('Erro', 'Não foi possível excluir o aluno.');
-            }
-          } 
-        }
-      ]
+    const confirmed = await confirmAction(
+      'Excluir Aluno',
+      'Tem certeza de que deseja remover este aluno? O acesso ao sistema será cancelado.',
+      'Excluir',
     );
+    if (!confirmed) return;
+
+    try {
+      await studentsApi.deleteStudent(id, session);
+      showMessage('Sucesso', 'Aluno excluído com sucesso.');
+      loadStudents(1, false, session);
+    } catch (error) {
+      console.log('Erro ao excluir aluno:', error);
+      showMessage('Erro', 'Não foi possível excluir o aluno.');
+    }
   };
 
   return (

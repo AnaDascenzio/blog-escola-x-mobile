@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useAuth } from "@/context/auth-context";
+import { confirmAction, showMessage } from "@/utils/dialogs";
 import {
   deletePost,
   getPostById,
@@ -104,19 +105,14 @@ export default function EditPostScreen({ id, from }: EditPostScreenProps) {
     }
   }
 
-  function confirmDelete() {
-    Alert.alert(
+  async function confirmDelete() {
+    const confirmed = await confirmAction(
       "Excluir publicação",
       `Tem certeza de que deseja excluir "${post?.title ?? "esta publicação"}"? Essa ação não pode ser desfeita.`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: handleDelete,
-        },
-      ],
+      "Excluir",
     );
+    if (!confirmed) return;
+    await handleDelete();
   }
 
   async function handleDelete() {
@@ -131,7 +127,7 @@ export default function EditPostScreen({ id, from }: EditPostScreenProps) {
         router.back();
       }
     } catch (error) {
-      Alert.alert(
+      showMessage(
         "Não foi possível excluir",
         error instanceof Error
           ? error.message
@@ -187,11 +183,12 @@ export default function EditPostScreen({ id, from }: EditPostScreenProps) {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
       <View style={styles.header}>
         <Pressable
           accessibilityLabel="Voltar"
           accessibilityRole="button"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           onPress={() => router.back()}
           style={({ pressed }) => [
             styles.backButton,
@@ -220,7 +217,7 @@ export default function EditPostScreen({ id, from }: EditPostScreenProps) {
         onSubmit={handleSubmit}
         submitLabel="Salvar alterações"
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -228,7 +225,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F4F8FF",
-    paddingTop: 48,
   },
   centeredContainer: {
     flex: 1,
@@ -240,8 +236,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
+    paddingTop: 12,
     paddingHorizontal: 20,
-    marginBottom: 12,
+    paddingBottom: 14,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2EBF6",
+    zIndex: 10,
+    elevation: 3,
   },
   backButton: {
     width: 36,

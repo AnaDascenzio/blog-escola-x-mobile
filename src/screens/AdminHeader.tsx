@@ -24,7 +24,8 @@ export function AdminHeader({
         <Pressable
           accessibilityLabel="Voltar ao Feed"
           accessibilityRole="button"
-          onPress={() => router.push("/home")}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          onPress={() => router.replace("/home")}
           style={({ pressed }) => [
             styles.backButton,
             pressed && styles.buttonPressed,

@@ -6,11 +6,11 @@ import {
   getSubjectInfo,
   type Post,
 } from "@/services/posts/posts-api";
+import { confirmAction, showMessage } from "@/utils/dialogs";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -104,19 +104,14 @@ export default function AdminPostsScreen() {
     });
   }
 
-  function confirmDelete(post: Post) {
-    Alert.alert(
+  async function confirmDelete(post: Post) {
+    const confirmed = await confirmAction(
       "Excluir publicação",
       `Tem certeza que deseja excluir "${post.title}"? Essa ação não pode ser desfeita.`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: () => handleDelete(post.id),
-        },
-      ],
+      "Excluir",
     );
+    if (!confirmed) return;
+    await handleDelete(post.id);
   }
 
   async function handleDelete(postId: string) {
@@ -125,7 +120,7 @@ export default function AdminPostsScreen() {
       await deletePost(postId, session);
       fetchPosts(page, session);
     } catch (error) {
-      Alert.alert(
+      showMessage(
         "Não foi possível excluir",
         error instanceof Error
           ? error.message

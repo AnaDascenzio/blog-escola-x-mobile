@@ -19,6 +19,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -129,11 +130,12 @@ export default function TeacherFormScreen({ id }: TeacherFormScreenProps) {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
       <View style={styles.header}>
         <Pressable
           accessibilityLabel="Voltar"
           accessibilityRole="button"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           onPress={() => router.back()}
           style={({ pressed }) => [
             styles.backButton,
@@ -237,7 +239,7 @@ export default function TeacherFormScreen({ id }: TeacherFormScreenProps) {
           </ScrollView>
         </KeyboardAvoidingView>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -247,7 +249,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 48,
+    paddingTop: 12,
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,

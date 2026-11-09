@@ -1,10 +1,10 @@
 import { useAuth } from '@/context/auth-context';
 import { studentsApi } from '@/services/students/students-api';
+import { showMessage } from '@/utils/dialogs';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     KeyboardAvoidingView,
     Platform,
     Pressable,
@@ -14,6 +14,7 @@ import {
     TextInput,
     View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -45,7 +46,7 @@ export default function StudentFormScreen() {
             .catch((error) => {
                 if (active) {
                     console.log('Erro ao carregar dados do aluno:', error);
-                    Alert.alert('Erro', 'Não foi possível carregar os dados do aluno.');
+                    showMessage('Erro', 'Não foi possível carregar os dados do aluno.');
                 }
             })
             .finally(() => {
@@ -63,22 +64,22 @@ export default function StudentFormScreen() {
         const normalizedPassword = password.trim();
 
         if (!normalizedName || !normalizedEmail) {
-            Alert.alert('Atenção', 'Preencha os campos obrigatórios (Nome e E-mail).');
+            showMessage('Atenção', 'Preencha os campos obrigatórios (Nome e E-mail).');
             return;
         }
 
         if (normalizedName.length < 3) {
-            Alert.alert('Atenção', 'O nome precisa ter pelo menos 3 caracteres.');
+            showMessage('Atenção', 'O nome precisa ter pelo menos 3 caracteres.');
             return;
         }
 
         if (!EMAIL_REGEX.test(normalizedEmail)) {
-            Alert.alert('Atenção', 'Informe um e-mail válido.');
+            showMessage('Atenção', 'Informe um e-mail válido.');
             return;
         }
 
         if (normalizedPassword.length > 0 && normalizedPassword.length < 6) {
-            Alert.alert('Atenção', 'A senha precisa ter pelo menos 6 caracteres.');
+            showMessage('Atenção', 'A senha precisa ter pelo menos 6 caracteres.');
             return;
         }
 
@@ -93,7 +94,7 @@ export default function StudentFormScreen() {
                     payload.password = normalizedPassword;
                 }
                 await studentsApi.updateStudent(studentId, payload, session);
-                Alert.alert('Sucesso', 'Aluno atualizado com sucesso!');
+                showMessage('Sucesso', 'Aluno atualizado com sucesso!');
             } else {
                 await studentsApi.createStudent(
                     {
@@ -103,7 +104,7 @@ export default function StudentFormScreen() {
                     },
                     session
                 );
-                Alert.alert('Sucesso', 'Aluno cadastrado com sucesso!');
+                showMessage('Sucesso', 'Aluno cadastrado com sucesso!');
             }
             router.back();
         } catch (error: any) {
@@ -116,7 +117,7 @@ export default function StudentFormScreen() {
                 messageStr.includes('users_email_key')
                     ? 'E-mail já cadastrado.'
                     : messageStr;
-            Alert.alert('Erro', errorMessage);
+            showMessage('Erro', errorMessage);
             setSubmitting(false);
         }
     };
@@ -130,12 +131,13 @@ export default function StudentFormScreen() {
     }
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
             {/* Cabeçalho Padronizado */}
             <View style={styles.header}>
                 <Pressable
                     accessibilityLabel="Voltar"
                     accessibilityRole="button"
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     onPress={() => router.back()}
                     style={({ pressed }) => [
                         styles.backButton,
@@ -236,7 +238,7 @@ export default function StudentFormScreen() {
                     </Pressable>
                 </ScrollView>
             </KeyboardAvoidingView>
-        </View>
+        </SafeAreaView>
     );
 }
 
@@ -257,7 +259,7 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingTop: 48,
+        paddingTop: 12,
         paddingHorizontal: 20,
         paddingBottom: 16,
         borderBottomWidth: 1,

@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Keyboard,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -60,6 +62,29 @@ export default function PostForm({
   );
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  const scrollRef = useRef<ScrollView>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+      },
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => {
+        setKeyboardHeight(0);
+      },
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   async function handlePickImage() {
     try {
@@ -139,11 +164,19 @@ export default function PostForm({
   const displayedError = validationError ?? errorMessage;
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      keyboardDismissMode="on-drag"
-      keyboardShouldPersistTaps="always"
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={styles.flex}
     >
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={[
+          styles.container,
+          { paddingBottom: keyboardHeight > 0 ? keyboardHeight + 80 : 80 },
+        ]}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+      >
       <Text style={styles.label}>Título</Text>
       <TextInput
         accessibilityLabel="Título da publicação"
@@ -206,6 +239,7 @@ export default function PostForm({
         onChangeText={setSummary}
         placeholder="Resumo curto exibido no feed"
         placeholderTextColor="#94A3B8"
+        scrollEnabled={false}
         style={[styles.input, styles.multilineInput]}
         value={summary}
       />
@@ -219,6 +253,7 @@ export default function PostForm({
         onChangeText={setContent}
         placeholder="Conteúdo completo da publicação"
         placeholderTextColor="#94A3B8"
+        scrollEnabled={false}
         style={[styles.input, styles.multilineInput, styles.contentInput]}
         value={content}
       />
@@ -286,6 +321,11 @@ export default function PostForm({
               editable={!isSubmitting}
               keyboardType="url"
               onChangeText={setImageUrl}
+              onFocus={() => {
+                setTimeout(() => {
+                  scrollRef.current?.scrollToEnd({ animated: true });
+                }, 150);
+              }}
               placeholder="https://..."
               placeholderTextColor="#94A3B8"
               style={[styles.input, { marginTop: 8 }]}
@@ -303,6 +343,11 @@ export default function PostForm({
         editable={!isSubmitting}
         keyboardType="url"
         onChangeText={setLink}
+        onFocus={() => {
+          setTimeout(() => {
+            scrollRef.current?.scrollToEnd({ animated: true });
+          }, 150);
+        }}
         placeholder="https://..."
         placeholderTextColor="#94A3B8"
         style={styles.input}
@@ -350,15 +395,19 @@ export default function PostForm({
           )}
         </Pressable>
       ) : null}
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   container: {
     paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 40,
+    paddingTop: 16,
+    paddingBottom: 80,
   },
   label: {
     marginBottom: 7,
