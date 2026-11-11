@@ -65,7 +65,7 @@ export function AdminHeader({
               activeTab === "posts" && styles.tabTextActive,
             ]}
           >
-            📝 Publicações
+             Publicações
           </Text>
         </Pressable>
 
@@ -87,7 +87,7 @@ export function AdminHeader({
               activeTab === "students" && styles.tabTextActive,
             ]}
           >
-            🎓 Alunos
+             Alunos
           </Text>
         </Pressable>
 
@@ -109,7 +109,7 @@ export function AdminHeader({
               activeTab === "teachers" && styles.tabTextActive,
             ]}
           >
-            👨‍🏫 Professores
+             Professores
           </Text>
         </Pressable>
       </View>

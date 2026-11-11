@@ -1,21 +1,3 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Animated,
-  FlatList,
-  Platform,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StatusBar as RNStatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
-import { router, useFocusEffect } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
 import { useAuth } from "@/context/auth-context";
 import {
   formatPostDate,
@@ -25,6 +7,24 @@ import {
   type Post,
 } from "@/services/posts/posts-api";
 import { getUserById } from "@/services/users/users-api";
+import { router, useFocusEffect } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Animated,
+  FlatList,
+  Platform,
+  Pressable,
+  RefreshControl,
+  StatusBar as RNStatusBar,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const PAGE_SIZE = 6;
 
@@ -261,7 +261,7 @@ export default function PostsScreen() {
               {displayName}
             </Text>
             <Text style={styles.userRoleBadge}>
-              {isTeacher ? "👨‍🏫 Professor" : "🎓 Aluno"}
+              {isTeacher ? " Professor" : " Aluno"}
             </Text>
           </View>
         </View>
@@ -278,7 +278,7 @@ export default function PostsScreen() {
                 pressed && styles.buttonPressed,
               ]}
             >
-              <Text style={styles.gestaoIcon}>⚙️</Text>
+              <Text style={styles.gestaoIcon}> </Text>
               <Text style={styles.gestaoButtonText}>Gestão</Text>
             </Pressable>
           ) : null}
