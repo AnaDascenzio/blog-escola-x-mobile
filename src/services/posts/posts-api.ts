@@ -78,7 +78,6 @@ export interface SelectedImageFile {
   uri: string;
   name?: string;
   mimeType?: string;
-  base64?: string | null;
   file?: unknown;
 }
 
@@ -292,14 +291,21 @@ async function executePostSave(
     const { uri, mimeType } = data.imageFile;
     const nativeFile = new File(uri);
 
-    const uploadResult = await nativeFile.upload(url, {
-      httpMethod: method,
-      uploadType: UploadType.MULTIPART,
-      fieldName: "image",
-      mimeType: mimeType || "image/jpeg",
-      parameters,
-      headers,
-    });
+    let uploadResult;
+    try {
+      uploadResult = await nativeFile.upload(url, {
+        httpMethod: method,
+        uploadType: UploadType.MULTIPART,
+        fieldName: "image",
+        mimeType: mimeType || "image/jpeg",
+        parameters,
+        headers,
+      });
+    } catch {
+      throw new Error(
+        "Não foi possível conectar à API de publicações. Verifique sua conexão.",
+      );
+    }
 
     if (uploadResult.status < 200 || uploadResult.status >= 300) {
       let message: string | null = null;
@@ -329,12 +335,18 @@ async function executePostSave(
     const { uri, name, file } = data.imageFile;
     const fileName = name || "upload.jpg";
 
-    if (file && (file instanceof Blob || (typeof File !== "undefined" && file instanceof File))) {
-      formData.append("image", file as Blob, fileName);
-    } else {
-      const res = await fetch(uri);
-      const blob = await res.blob();
-      formData.append("image", blob, fileName);
+    try {
+      if (file && (file instanceof Blob || (typeof File !== "undefined" && file instanceof File))) {
+        formData.append("image", file as Blob, fileName);
+      } else {
+        const res = await fetch(uri);
+        const blob = await res.blob();
+        formData.append("image", blob, fileName);
+      }
+    } catch {
+      throw new Error(
+        "Não foi possível preparar o arquivo de imagem para envio.",
+      );
     }
 
     const headers: Record<string, string> = {
@@ -344,11 +356,18 @@ async function executePostSave(
       headers.Authorization = `Bearer ${token}`;
     }
 
-    const response = await fetch(url, {
-      method,
-      headers,
-      body: formData,
-    });
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method,
+        headers,
+        body: formData,
+      });
+    } catch {
+      throw new Error(
+        "Não foi possível conectar à API de publicações. Verifique sua conexão.",
+      );
+    }
 
     if (!response.ok) {
       const message = await getResponseErrorMessage(response);
@@ -360,11 +379,18 @@ async function executePostSave(
 
   // Caso 3: Sem arquivo anexado (envio padrão JSON em todas as plataformas)
   const { imageFile: _ignored, ...jsonData } = data;
-  const response = await fetch(url, {
-    method,
-    headers: buildHeaders(token),
-    body: JSON.stringify(jsonData),
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method,
+      headers: buildHeaders(token),
+      body: JSON.stringify(jsonData),
+    });
+  } catch {
+    throw new Error(
+      "Não foi possível conectar à API de publicações. Verifique sua conexão.",
+    );
+  }
 
   if (!response.ok) {
     const message = await getResponseErrorMessage(response);

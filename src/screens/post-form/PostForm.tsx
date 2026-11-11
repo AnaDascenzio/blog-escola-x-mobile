@@ -93,7 +93,6 @@ export default function PostForm({
         allowsEditing: true,
         aspect: [16, 9],
         quality: 0.8,
-        base64: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -112,7 +111,6 @@ export default function PostForm({
           uri: asset.uri,
           name: fileName,
           mimeType,
-          base64: asset.base64,
           file: (asset as { file?: unknown }).file,
         });
         setValidationError(null);

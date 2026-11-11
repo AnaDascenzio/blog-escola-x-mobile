@@ -64,7 +64,7 @@ function getApiErrorMessage(value: unknown) {
 
 export async function signInWithApi(email: string, password: string) {
   const apiBaseUrl = getApiBaseUrl();
-  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedEmail = email.trim();
   let response: Response;
 
   try {

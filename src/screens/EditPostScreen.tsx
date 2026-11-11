@@ -120,11 +120,23 @@ export default function EditPostScreen({ id, from }: EditPostScreenProps) {
     try {
       await deletePost(id, session);
       if (from === "detail") {
-        router.replace("/home");
+        if (router.canDismiss()) {
+          router.dismiss(2);
+        } else {
+          router.replace("/home");
+        }
       } else if (from === "admin") {
-        router.replace("/admin/posts");
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace("/admin/posts");
+        }
       } else {
-        router.back();
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace("/home");
+        }
       }
     } catch (error) {
       showMessage(

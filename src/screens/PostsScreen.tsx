@@ -219,13 +219,16 @@ export default function PostsScreen() {
     }
   }
 
-  // Filtragem local complementar por termo de busca (título, resumo/conteúdo ou autor)
+  // Filtragem local complementar por termo de busca (título, resumo/conteúdo ou autor) e matéria
   const filteredPosts = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
 
     return posts
       .filter((post) => !post.isDeleted)
       .filter((post) => {
+        if (selectedSubject !== "ALL" && post.subject !== selectedSubject) {
+          return false;
+        }
         if (!term) return true;
 
         return (
@@ -235,7 +238,7 @@ export default function PostsScreen() {
           (post.author?.name?.toLowerCase().includes(term) ?? false)
         );
       });
-  }, [posts, searchTerm]);
+  }, [posts, searchTerm, selectedSubject]);
 
   function handleOpenPost(postId: string) {
     router.push({
@@ -515,7 +518,7 @@ export default function PostsScreen() {
             </View>
           ) : null
         }
-        ListHeaderComponent={renderHeader}
+        ListHeaderComponent={renderHeader()}
         refreshControl={
           <RefreshControl
             colors={["#2F68F5"]}
