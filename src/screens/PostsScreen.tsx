@@ -3,6 +3,7 @@ import {
   formatPostDate,
   getPosts,
   getSubjectInfo,
+  searchPosts,
   SUBJECT_MAP,
   type Post,
 } from "@/services/posts/posts-api";
@@ -27,6 +28,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const PAGE_SIZE = 6;
+const SEARCH_DELAY_MS = 400;
+
+interface SearchResult {
+  term: string;
+  posts: Post[];
+  error: string | null;
+}
 
 const SKELETON_ITEMS = [
   { id: "skeleton-1" },
@@ -113,6 +121,56 @@ export default function PostsScreen() {
   const [selectedSubject, setSelectedSubject] = useState("ALL");
   const filterScrollRef = useRef<ScrollView>(null);
 
+  // Busca em todas as publicações: espera a pessoa parar de digitar antes de chamar a API.
+  const [debouncedTerm, setDebouncedTerm] = useState("");
+  const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
+  const activeTerm = searchTerm.trim() ? debouncedTerm : "";
+  const isSearching = activeTerm.length > 0;
+  const isSearchLoading = isSearching && searchResult?.term !== activeTerm;
+
+  useEffect(() => {
+    const timer = setTimeout(
+      () => setDebouncedTerm(searchTerm.trim()),
+      SEARCH_DELAY_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const runSearch = useCallback((term: string, authToken?: string | null) => {
+    let isMounted = true;
+
+    searchPosts(term, authToken)
+      .then((found) => {
+        if (isMounted) {
+          setSearchResult({ term, posts: found, error: null });
+        }
+      })
+      .catch((error: unknown) => {
+        if (isMounted) {
+          setSearchResult({
+            term,
+            posts: [],
+            error:
+              error instanceof Error
+                ? error.message
+                : "Não foi possível buscar as publicações.",
+          });
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Também refaz a busca ao voltar para a tela (ex.: depois de editar um post).
+  useFocusEffect(
+    useCallback(() => {
+      if (!activeTerm) return;
+      return runSearch(activeTerm, session);
+    }, [activeTerm, session, runSearch]),
+  );
+
   // Ordena os filtros posicionando a disciplina selecionada imediatamente à direita de "Todos"
   const orderedSubjectEntries = useMemo(() => {
     const entries = Object.entries(SUBJECT_MAP);
@@ -187,18 +245,32 @@ export default function PostsScreen() {
   }
 
   function handleRefresh() {
+    if (isSearching) {
+      runSearch(activeTerm, session);
+      return;
+    }
     setIsRefreshing(true);
     fetchPosts(page, selectedSubject, session);
   }
 
   function handleRetry() {
+    if (isSearching) {
+      setSearchResult(null);
+      runSearch(activeTerm, session);
+      return;
+    }
     setIsLoading(true);
     setErrorMessage(null);
     fetchPosts(page, selectedSubject, session);
   }
 
-  function handleClearFilters() {
+  function handleClearSearch() {
     setSearchTerm("");
+    setDebouncedTerm("");
+  }
+
+  function handleClearFilters() {
+    handleClearSearch();
     setSelectedSubject("ALL");
     setPage(1);
     setIsLoading(true);
@@ -219,26 +291,22 @@ export default function PostsScreen() {
     }
   }
 
-  // Filtragem local complementar por termo de busca (título, resumo/conteúdo ou autor) e matéria
-  const filteredPosts = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
+  // Com busca ativa, usa o resultado da API (todas as publicações); sem busca, a página atual.
+  // O filtro de matéria é aplicado aqui porque a busca da API não filtra por matéria.
+  const visiblePosts = useMemo(() => {
+    const source = isSearching ? (searchResult?.posts ?? []) : posts;
 
-    return posts
-      .filter((post) => !post.isDeleted)
-      .filter((post) => {
-        if (selectedSubject !== "ALL" && post.subject !== selectedSubject) {
-          return false;
-        }
-        if (!term) return true;
+    return source.filter(
+      (post) =>
+        !post.isDeleted &&
+        (selectedSubject === "ALL" || post.subject === selectedSubject),
+    );
+  }, [isSearching, searchResult, posts, selectedSubject]);
 
-        return (
-          post.title.toLowerCase().includes(term) ||
-          post.content.toLowerCase().includes(term) ||
-          (post.summary?.toLowerCase().includes(term) ?? false) ||
-          (post.author?.name?.toLowerCase().includes(term) ?? false)
-        );
-      });
-  }, [posts, searchTerm, selectedSubject]);
+  const showSkeleton = isSearching
+    ? isSearchLoading
+    : isLoading && !isRefreshing;
+  const listError = isSearching ? (searchResult?.error ?? null) : errorMessage;
 
   function handleOpenPost(postId: string) {
     router.push({
@@ -326,7 +394,7 @@ export default function PostsScreen() {
           onBlur={() => setIsSearchFocused(false)}
           onChangeText={setSearchTerm}
           onFocus={() => setIsSearchFocused(true)}
-          placeholder="Buscar posts por palavra-chave ou autor..."
+          placeholder="Buscar posts por palavra-chave..."
           placeholderTextColor="#94A3B8"
           style={styles.searchInput}
           value={searchTerm}
@@ -335,7 +403,7 @@ export default function PostsScreen() {
           <Pressable
             accessibilityLabel="Limpar busca"
             accessibilityRole="button"
-            onPress={() => setSearchTerm("")}
+            onPress={handleClearSearch}
             style={({ pressed }) => [
               styles.clearSearchButton,
               pressed && { opacity: 0.6 },
@@ -402,6 +470,15 @@ export default function PostsScreen() {
           })}
         </ScrollView>
       </View>
+
+      {isSearching && !isSearchLoading && !listError ? (
+        <Text accessibilityLiveRegion="polite" style={styles.searchSummary}>
+          {visiblePosts.length === 1
+            ? "1 publicação encontrada"
+            : `${visiblePosts.length} publicações encontradas`}{" "}
+          em todo o portal
+        </Text>
+      ) : null}
     </View>
   );
 
@@ -411,17 +488,17 @@ export default function PostsScreen() {
       <FlatList
         contentContainerStyle={styles.listContent}
         data={
-          isLoading && !isRefreshing
+          showSkeleton
             ? (SKELETON_ITEMS as unknown as Post[])
-            : filteredPosts
+            : visiblePosts
         }
         keyboardShouldPersistTaps="always"
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
-          errorMessage ? (
+          listError ? (
             <View style={styles.stateCard}>
               <Text style={styles.stateTitle}>Não foi possível carregar</Text>
-              <Text style={styles.stateSubtitle}>{errorMessage}</Text>
+              <Text style={styles.stateSubtitle}>{listError}</Text>
               <Pressable
                 accessibilityRole="button"
                 onPress={handleRetry}
@@ -433,7 +510,7 @@ export default function PostsScreen() {
                 <Text style={styles.retryButtonText}>Tentar novamente</Text>
               </Pressable>
             </View>
-          ) : !isLoading ? (
+          ) : !showSkeleton ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyIcon}>▤</Text>
               <Text style={styles.emptyTitle}>Nenhuma publicação encontrada</Text>
@@ -460,7 +537,7 @@ export default function PostsScreen() {
           ) : null
         }
         ListFooterComponent={
-          !isLoading && totalPages > 1 ? (
+          !isSearching && !isLoading && totalPages > 1 ? (
             <View style={styles.paginationRow}>
               <Pressable
                 accessibilityRole="button"
@@ -528,7 +605,7 @@ export default function PostsScreen() {
           />
         }
         renderItem={({ item }) => {
-          if (isLoading && !isRefreshing) {
+          if (showSkeleton) {
             return <SkeletonCard />;
           }
 
@@ -817,6 +894,12 @@ const styles = StyleSheet.create({
   filterSection: {
     marginBottom: 14,
     marginHorizontal: -20,
+  },
+  searchSummary: {
+    marginTop: -4,
+    marginBottom: 10,
+    fontSize: 13,
+    color: "#64748B",
   },
   filterScroll: {
     paddingHorizontal: 20,
