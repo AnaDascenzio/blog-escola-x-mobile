@@ -8,7 +8,11 @@ import {
   type PropsWithChildren,
 } from "react";
 import { signInWithApi } from "@/services/auth/auth-api";
-import { decodeJwtPayload, type DecodedToken } from "@/services/auth/jwt";
+import {
+  decodeJwtPayload,
+  isJwtExpired,
+  type DecodedToken,
+} from "@/services/auth/jwt";
 import {
   clearStoredToken,
   getStoredToken,
@@ -46,7 +50,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setInitializationError(null);
 
     try {
-      setSession(await getStoredToken());
+      const storedToken = await getStoredToken();
+      if (storedToken && isJwtExpired(storedToken)) {
+        await clearStoredToken();
+        setSession(null);
+      } else {
+        setSession(storedToken);
+      }
     } catch (error) {
       setInitializationError(getErrorMessage(error));
     } finally {
@@ -58,8 +68,15 @@ export function AuthProvider({ children }: PropsWithChildren) {
     let isActive = true;
 
     getStoredToken()
-      .then((storedToken) => {
-        if (isActive) {
+      .then(async (storedToken) => {
+        if (!isActive) return;
+        if (storedToken && isJwtExpired(storedToken)) {
+          await clearStoredToken();
+          if (isActive) {
+            setSession(null);
+            setInitializationError(null);
+          }
+        } else {
           setSession(storedToken);
           setInitializationError(null);
         }

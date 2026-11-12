@@ -2,11 +2,18 @@ import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 
 const TOKEN_STORAGE_KEY = "blog-escola-x.auth-token";
-let webToken: string | null = null;
+let webTokenFallback: string | null = null;
 
 export async function getStoredToken() {
   if (Platform.OS === "web") {
-    return webToken;
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        return window.localStorage.getItem(TOKEN_STORAGE_KEY) ?? webTokenFallback;
+      }
+    } catch {
+      // LocalStorage desativado ou bloqueado por política de cookies
+    }
+    return webTokenFallback;
   }
 
   return SecureStore.getItemAsync(TOKEN_STORAGE_KEY);
@@ -14,7 +21,14 @@ export async function getStoredToken() {
 
 export async function storeToken(token: string) {
   if (Platform.OS === "web") {
-    webToken = token;
+    webTokenFallback = token;
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
+      }
+    } catch {
+      // ignore
+    }
     return;
   }
 
@@ -23,7 +37,14 @@ export async function storeToken(token: string) {
 
 export async function clearStoredToken() {
   if (Platform.OS === "web") {
-    webToken = null;
+    webTokenFallback = null;
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+      }
+    } catch {
+      // ignore
+    }
     return;
   }
 

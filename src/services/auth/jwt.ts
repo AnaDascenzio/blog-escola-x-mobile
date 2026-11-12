@@ -51,8 +51,10 @@ function utf8BytesToString(bytes: Uint8Array): string {
 
 export interface DecodedToken {
   id: string | number;
+  name?: string;
   email: string;
   role: "TEACHER" | "STUDENT";
+  exp?: number;
 }
 
 function isDecodedToken(value: unknown): value is DecodedToken {
@@ -61,8 +63,37 @@ function isDecodedToken(value: unknown): value is DecodedToken {
   return (
     (typeof candidate.id === "string" || typeof candidate.id === "number") &&
     typeof candidate.email === "string" &&
-    (candidate.role === "TEACHER" || candidate.role === "STUDENT")
+    (candidate.role === "TEACHER" || candidate.role === "STUDENT") &&
+    (candidate.name === undefined || typeof candidate.name === "string") &&
+    (candidate.exp === undefined || typeof candidate.exp === "number")
   );
+}
+
+/**
+ * Verifica se um JWT já expirou com base na claim `exp`.
+ */
+export function isJwtExpired(token: string): boolean {
+  try {
+    const payloadSegment = token.split(".")[1];
+    if (!payloadSegment) return true;
+
+    const json = utf8BytesToString(base64UrlToBytes(payloadSegment));
+    const parsed: unknown = JSON.parse(json);
+
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "exp" in parsed &&
+      typeof (parsed as { exp?: unknown }).exp === "number"
+    ) {
+      const expInSeconds = (parsed as { exp: number }).exp;
+      return Date.now() >= expInSeconds * 1000;
+    }
+
+    return false;
+  } catch {
+    return true;
+  }
 }
 
 /**

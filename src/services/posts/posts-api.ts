@@ -1,3 +1,5 @@
+import { File, UploadType } from "expo-file-system";
+import { Platform } from "react-native";
 import { getApiBaseUrl } from "@/services/auth/auth-api";
 
 export type Subject =
@@ -72,6 +74,13 @@ export interface PaginatedPosts {
   total: number;
 }
 
+export interface SelectedImageFile {
+  uri: string;
+  name?: string;
+  mimeType?: string;
+  file?: unknown;
+}
+
 export interface PostFormInput {
   title: string;
   content: string;
@@ -79,6 +88,7 @@ export interface PostFormInput {
   summary?: string;
   imageUrl?: string;
   link?: string;
+  imageFile?: SelectedImageFile | null;
 }
 
 function buildHeaders(token?: string | null): Record<string, string> {
@@ -125,9 +135,14 @@ export async function getPosts(
   token?: string | null,
   page = 1,
   limit = 10,
+  subject?: string,
 ): Promise<PaginatedPosts> {
   const baseUrl = getApiBaseUrl();
-  const url = `${baseUrl}/posts?page=${page}&limit=${limit}`;
+  const subjectParam =
+    subject && subject !== "ALL"
+      ? `&subject=${encodeURIComponent(subject)}`
+      : "";
+  const url = `${baseUrl}/posts?page=${page}&limit=${limit}${subjectParam}`;
 
   let response: Response;
   try {
@@ -250,19 +265,126 @@ export async function getPostAuthor(
   }
 }
 
-export async function createPost(
+async function executePostSave(
+  url: string,
+  method: "POST" | "PUT",
   data: PostFormInput,
   token?: string | null,
 ): Promise<Post> {
-  const baseUrl = getApiBaseUrl();
-  const url = `${baseUrl}/posts`;
+  // Caso 1: Foi selecionado um arquivo de imagem local no celular (Android / iOS)
+  if (data.imageFile && Platform.OS !== "web") {
+    const parameters: Record<string, string> = {
+      title: data.title,
+      content: data.content,
+      subject: data.subject,
+    };
+    if (data.summary) parameters.summary = data.summary;
+    if (data.link) parameters.link = data.link;
 
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const { uri, mimeType } = data.imageFile;
+    const nativeFile = new File(uri);
+
+    let uploadResult;
+    try {
+      uploadResult = await nativeFile.upload(url, {
+        httpMethod: method,
+        uploadType: UploadType.MULTIPART,
+        fieldName: "image",
+        mimeType: mimeType || "image/jpeg",
+        parameters,
+        headers,
+      });
+    } catch {
+      throw new Error(
+        "Não foi possível conectar à API de publicações. Verifique sua conexão.",
+      );
+    }
+
+    if (uploadResult.status < 200 || uploadResult.status >= 300) {
+      let message: string | null = null;
+      try {
+        const parsed = JSON.parse(uploadResult.body);
+        message = parsed.message || parsed.error;
+      } catch {
+        // ignore
+      }
+      throw new Error(
+        message || fallbackActionErrorMessage(method === "POST" ? "criar" : "atualizar", uploadResult.status),
+      );
+    }
+
+    return JSON.parse(uploadResult.body) as Post;
+  }
+
+  // Caso 2: Web com arquivo selecionado
+  if (data.imageFile && Platform.OS === "web") {
+    const formData = new FormData();
+    formData.append("title", data.title);
+    formData.append("content", data.content);
+    formData.append("subject", data.subject);
+    if (data.summary) formData.append("summary", data.summary);
+    if (data.link) formData.append("link", data.link);
+
+    const { uri, name, file } = data.imageFile;
+    const fileName = name || "upload.jpg";
+
+    try {
+      if (file && (file instanceof Blob || (typeof File !== "undefined" && file instanceof File))) {
+        formData.append("image", file as Blob, fileName);
+      } else {
+        const res = await fetch(uri);
+        const blob = await res.blob();
+        formData.append("image", blob, fileName);
+      }
+    } catch {
+      throw new Error(
+        "Não foi possível preparar o arquivo de imagem para envio.",
+      );
+    }
+
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method,
+        headers,
+        body: formData,
+      });
+    } catch {
+      throw new Error(
+        "Não foi possível conectar à API de publicações. Verifique sua conexão.",
+      );
+    }
+
+    if (!response.ok) {
+      const message = await getResponseErrorMessage(response);
+      throw new Error(message ?? fallbackActionErrorMessage(method === "POST" ? "criar" : "atualizar", response.status));
+    }
+
+    return (await response.json()) as Post;
+  }
+
+  // Caso 3: Sem arquivo anexado (envio padrão JSON em todas as plataformas)
+  const { imageFile: _ignored, ...jsonData } = data;
   let response: Response;
   try {
     response = await fetch(url, {
-      method: "POST",
+      method,
       headers: buildHeaders(token),
-      body: JSON.stringify(data),
+      body: JSON.stringify(jsonData),
     });
   } catch {
     throw new Error(
@@ -272,10 +394,19 @@ export async function createPost(
 
   if (!response.ok) {
     const message = await getResponseErrorMessage(response);
-    throw new Error(message ?? fallbackActionErrorMessage("criar", response.status));
+    throw new Error(message ?? fallbackActionErrorMessage(method === "POST" ? "criar" : "atualizar", response.status));
   }
 
   return (await response.json()) as Post;
+}
+
+export async function createPost(
+  data: PostFormInput,
+  token?: string | null,
+): Promise<Post> {
+  const baseUrl = getApiBaseUrl();
+  const url = `${baseUrl}/posts`;
+  return executePostSave(url, "POST", data, token);
 }
 
 export async function updatePost(
@@ -285,26 +416,7 @@ export async function updatePost(
 ): Promise<Post> {
   const baseUrl = getApiBaseUrl();
   const url = `${baseUrl}/posts/${id}`;
-
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      method: "PUT",
-      headers: buildHeaders(token),
-      body: JSON.stringify(data),
-    });
-  } catch {
-    throw new Error(
-      "Não foi possível conectar à API de publicações. Verifique sua conexão.",
-    );
-  }
-
-  if (!response.ok) {
-    const message = await getResponseErrorMessage(response);
-    throw new Error(message ?? fallbackActionErrorMessage("atualizar", response.status));
-  }
-
-  return (await response.json()) as Post;
+  return executePostSave(url, "PUT", data, token);
 }
 
 export async function deletePost(id: string, token?: string | null): Promise<void> {

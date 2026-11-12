@@ -64,13 +64,14 @@ function getApiErrorMessage(value: unknown) {
 
 export async function signInWithApi(email: string, password: string) {
   const apiBaseUrl = getApiBaseUrl();
+  const normalizedEmail = email.trim();
   let response: Response;
 
   try {
     response = await fetch(`${apiBaseUrl}/users/signin`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email: normalizedEmail, password }),
     });
   } catch {
     throw new Error(

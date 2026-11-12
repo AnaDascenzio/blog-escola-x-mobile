@@ -77,7 +77,15 @@ async function getErrorMessage(
       "message" in body &&
       typeof (body as Record<string, unknown>).message === "string"
     ) {
-      return (body as Record<string, string>).message;
+      const msg = (body as Record<string, string>).message;
+      if (
+        msg.includes("unique constraint") ||
+        msg.includes("duplicate key") ||
+        msg.includes("users_email_key")
+      ) {
+        return "E-mail já cadastrado.";
+      }
+      return msg;
     }
   } catch {
     // Corpo vazio ou não-JSON: usa a mensagem padrão.
@@ -126,10 +134,15 @@ export async function createUser(
   input: CreateUserInput,
   token: string | null,
 ): Promise<User> {
+  const payload: CreateUserInput = {
+    ...input,
+    name: input.name.trim(),
+    email: input.email.trim().toLowerCase(),
+  };
   const response = await request(`${getApiBaseUrl()}/users`, {
     method: "POST",
     headers: buildHeaders(token),
-    body: JSON.stringify(input),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
@@ -144,10 +157,16 @@ export async function updateUser(
   input: UpdateUserInput,
   token: string | null,
 ): Promise<User> {
+  const payload: UpdateUserInput = { ...input };
+  if (payload.name !== undefined) payload.name = payload.name.trim();
+  if (payload.email !== undefined) {
+    payload.email = payload.email.trim().toLowerCase();
+  }
+
   const response = await request(`${getApiBaseUrl()}/users/${id}`, {
     method: "PUT",
     headers: buildHeaders(token),
-    body: JSON.stringify(input),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {

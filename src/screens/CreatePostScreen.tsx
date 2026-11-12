@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useAuth } from "@/context/auth-context";
 import { createPost, getPostAuthor } from "@/services/posts/posts-api";
@@ -40,6 +41,7 @@ export default function CreatePostScreen() {
           summary: values.summary || undefined,
           imageUrl: values.imageUrl || undefined,
           link: values.link || undefined,
+          imageFile: values.imageFile,
         },
         session,
       );
@@ -59,11 +61,12 @@ export default function CreatePostScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
       <View style={styles.header}>
         <Pressable
           accessibilityLabel="Voltar"
           accessibilityRole="button"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           onPress={() => router.back()}
           style={({ pressed }) => [
             styles.backButton,
@@ -82,7 +85,7 @@ export default function CreatePostScreen() {
         onSubmit={handleSubmit}
         submitLabel="Publicar"
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -90,13 +93,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F4F8FF",
-    paddingTop: 48,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
+    paddingTop: 12,
     paddingHorizontal: 20,
-    marginBottom: 12,
+    paddingBottom: 14,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2EBF6",
+    zIndex: 10,
+    elevation: 3,
   },
   backButton: {
     width: 36,

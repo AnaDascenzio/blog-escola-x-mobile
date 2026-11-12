@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import { useAuth } from "@/context/auth-context";
 import {
@@ -135,15 +136,15 @@ export default function PostDetailScreen({ id }: PostDetailScreenProps) {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
         <DetailSkeleton />
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (errorMessage || !post) {
     return (
-      <View style={styles.centeredContainer}>
+      <SafeAreaView edges={["top", "left", "right"]} style={styles.centeredContainer}>
         <View style={styles.errorCard}>
           <Text style={styles.errorTitle}>Ops! Algo deu errado</Text>
           <Text style={styles.errorMessage}>
@@ -174,7 +175,7 @@ export default function PostDetailScreen({ id }: PostDetailScreenProps) {
             </Pressable>
           </View>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -192,26 +193,28 @@ export default function PostDetailScreen({ id }: PostDetailScreenProps) {
         : "Corpo Docente • Escola X";
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-      style={styles.container}
-    >
-      <Animated.View style={{ opacity: contentOpacity }}>
-        <View style={styles.topActionsRow}>
-          <Pressable
-            accessibilityHint="Retorna para a listagem de publicações"
-            accessibilityLabel="Voltar ao feed"
-            accessibilityRole="button"
-            onPress={() => router.back()}
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && styles.backButtonPressed,
-            ]}
-          >
-            <Text style={styles.backButtonArrow}>←</Text>
-            <Text style={styles.backButtonText}>Voltar ao feed</Text>
-          </Pressable>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        style={styles.container}
+      >
+        <Animated.View style={{ opacity: contentOpacity }}>
+          <View style={styles.topActionsRow}>
+            <Pressable
+              accessibilityHint="Retorna para a listagem de publicações"
+              accessibilityLabel="Voltar ao feed"
+              accessibilityRole="button"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              onPress={() => router.back()}
+              style={({ pressed }) => [
+                styles.backButton,
+                pressed && styles.backButtonPressed,
+              ]}
+            >
+              <Text style={styles.backButtonArrow}>←</Text>
+              <Text style={styles.backButtonText}>Voltar ao feed</Text>
+            </Pressable>
 
           {isTeacher ? (
             <Pressable
@@ -221,7 +224,7 @@ export default function PostDetailScreen({ id }: PostDetailScreenProps) {
               onPress={() =>
                 router.push({
                   pathname: "/admin/posts/[id]/edit",
-                  params: { id: post.id },
+                  params: { id: post.id, from: "detail" },
                 })
               }
               style={({ pressed }) => [
@@ -286,6 +289,7 @@ export default function PostDetailScreen({ id }: PostDetailScreenProps) {
         </View>
       </Animated.View>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -296,7 +300,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 48,
+    paddingTop: 12,
     paddingBottom: 40,
   },
   centeredContainer: {

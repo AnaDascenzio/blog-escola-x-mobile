@@ -6,11 +6,11 @@ import {
   getSubjectInfo,
   type Post,
 } from "@/services/posts/posts-api";
+import { confirmAction, showMessage } from "@/utils/dialogs";
 import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -18,6 +18,9 @@ import {
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
+import { AdminHeader } from "@/screens/AdminHeader";
 
 const PAGE_SIZE = 10;
 
@@ -97,23 +100,18 @@ export default function AdminPostsScreen() {
   function handleEdit(postId: string) {
     router.push({
       pathname: "/admin/posts/[id]/edit",
-      params: { id: postId },
+      params: { id: postId, from: "admin" },
     });
   }
 
-  function confirmDelete(post: Post) {
-    Alert.alert(
+  async function confirmDelete(post: Post) {
+    const confirmed = await confirmAction(
       "Excluir publicação",
       `Tem certeza que deseja excluir "${post.title}"? Essa ação não pode ser desfeita.`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: () => handleDelete(post.id),
-        },
-      ],
+      "Excluir",
     );
+    if (!confirmed) return;
+    await handleDelete(post.id);
   }
 
   async function handleDelete(postId: string) {
@@ -122,7 +120,7 @@ export default function AdminPostsScreen() {
       await deletePost(postId, session);
       fetchPosts(page, session);
     } catch (error) {
-      Alert.alert(
+      showMessage(
         "Não foi possível excluir",
         error instanceof Error
           ? error.message
@@ -134,52 +132,13 @@ export default function AdminPostsScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Pressable
-          accessibilityLabel="Voltar"
-          accessibilityRole="button"
-          onPress={() => router.back()}
-          style={({ pressed }) => [
-            styles.backButton,
-            pressed && styles.backButtonPressed,
-          ]}
-        >
-          <Text style={styles.backButtonArrow}>←</Text>
-        </Pressable>
-        
-        <View style={styles.headerTitles}>
-          <Text style={styles.eyebrow}>PAINEL ADMINISTRATIVO</Text>
-          <Text style={styles.title}>Publicações</Text>
-        </View>
-
-        {/* Grupo de Ações do Cabeçalho */}
-        <View style={styles.headerActions}>
-          {/* Atalho para o Módulo de Alunos (Tarefa 5) */}
-          <Pressable
-            accessibilityLabel="Gerir Alunos"
-            accessibilityRole="button"
-            onPress={() => router.push("/admin/students")}
-            style={({ pressed }) => [
-              styles.studentsButton,
-              pressed && styles.buttonPressed,
-            ]}
-          >
-            <Text style={styles.studentsButtonText}>Alunos</Text>
-          </Pressable>
-          
-          <Pressable
-            accessibilityLabel="Gerenciar professores"
-            accessibilityRole="button"
-            onPress={() => router.push("/admin/teachers")}
-            style={({ pressed }) => [
-              styles.studentsButton,
-              pressed && styles.buttonPressed,
-            ]}
-          >
-            <Text style={styles.studentsButtonText}>Professores</Text>
-          </Pressable>
-
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
+      <StatusBar style="dark" />
+      <AdminHeader
+        activeTab="posts"
+        title="Publicações"
+        subtitle="Gerencie os artigos publicados no portal"
+        actionButton={
           <Pressable
             accessibilityLabel="Nova publicação"
             accessibilityRole="button"
@@ -189,10 +148,10 @@ export default function AdminPostsScreen() {
               pressed && styles.buttonPressed,
             ]}
           >
-            <Text style={styles.newButtonText}>+ Nova</Text>
+            <Text style={styles.newButtonText}>+ Nova Publicação</Text>
           </Pressable>
-        </View>
-      </View>
+        }
+      />
 
       {isLoading && !isRefreshing ? (
         <View style={styles.centeredContainer}>
@@ -317,9 +276,16 @@ export default function AdminPostsScreen() {
                   {item.title}
                 </Text>
 
-                <Text numberOfLines={1} style={styles.postAuthor}>
-                  ✍ {item.author?.name ?? "Professor(a) responsável"}
-                </Text>
+                <View style={styles.authorContainer}>
+                  <View style={styles.authorBadge}>
+                    <Text style={styles.authorInitial}>
+                      {(item.author?.name ?? "P").charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <Text numberOfLines={1} style={styles.postAuthor}>
+                    {item.author?.name ?? "Professor(a) responsável"}
+                  </Text>
+                </View>
 
                 <View style={styles.cardActions}>
                   <Pressable
@@ -357,7 +323,7 @@ export default function AdminPostsScreen() {
           style={styles.list}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -366,75 +332,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F4F8FF",
   },
-  header: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    paddingTop: 48,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2EBF6",
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 10,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-  },
-  backButtonPressed: {
-    transform: [{ scale: 0.95 }],
-    opacity: 0.82,
-  },
-  backButtonArrow: {
-    fontSize: 16,
-    color: "#2F68F5",
-    fontWeight: "600",
-  },
-  headerTitles: {
-    flex: 1,
-  },
-  eyebrow: {
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 1,
-    color: "#2F68F5",
-    marginBottom: 2,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#0F172A",
-  },
-  headerActions: {
-    flexDirection: "row",
-    gap: 8,
-    alignItems: "center",
-    justifyContent: "flex-end",
-    width: "100%",
-    marginTop: 12,
-  },
-  studentsButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#2F68F5",
-  },
-  studentsButtonText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#2F68F5",
-  },
   newButton: {
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     borderRadius: 8,
     backgroundColor: "#2F68F5",
   },
@@ -544,11 +444,32 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     marginBottom: 6,
   },
+  authorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    marginBottom: 12,
+  },
+  authorBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#EEF4FF",
+    borderWidth: 1,
+    borderColor: "#D8E6FD",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  authorInitial: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#2F68F5",
+  },
   postAuthor: {
     fontSize: 12,
     fontWeight: "600",
     color: "#475569",
-    marginBottom: 12,
+    flexShrink: 1,
   },
   cardActions: {
     flexDirection: "row",

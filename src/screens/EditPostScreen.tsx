@@ -6,21 +6,30 @@ import {
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useAuth } from "@/context/auth-context";
-import { getPostById, updatePost, type Post } from "@/services/posts/posts-api";
+import { confirmAction, showMessage } from "@/utils/dialogs";
+import {
+  deletePost,
+  getPostById,
+  updatePost,
+  type Post,
+} from "@/services/posts/posts-api";
 import PostForm, { type PostFormValues } from "@/screens/post-form/PostForm";
 
 interface EditPostScreenProps {
   id: string;
+  from?: string;
 }
 
-export default function EditPostScreen({ id }: EditPostScreenProps) {
+export default function EditPostScreen({ id, from }: EditPostScreenProps) {
   const { session } = useAuth();
   const [post, setPost] = useState<Post | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const fetchPost = useCallback((postId: string, authToken?: string | null) => {
@@ -80,6 +89,7 @@ export default function EditPostScreen({ id }: EditPostScreenProps) {
           summary: values.summary,
           imageUrl: values.imageUrl,
           link: values.link,
+          imageFile: values.imageFile,
         },
         session,
       );
@@ -92,6 +102,50 @@ export default function EditPostScreen({ id }: EditPostScreenProps) {
           : "Não foi possível salvar as alterações.",
       );
       setIsSubmitting(false);
+    }
+  }
+
+  async function confirmDelete() {
+    const confirmed = await confirmAction(
+      "Excluir publicação",
+      `Tem certeza de que deseja excluir "${post?.title ?? "esta publicação"}"? Essa ação não pode ser desfeita.`,
+      "Excluir",
+    );
+    if (!confirmed) return;
+    await handleDelete();
+  }
+
+  async function handleDelete() {
+    setIsDeleting(true);
+    try {
+      await deletePost(id, session);
+      if (from === "detail") {
+        if (router.canDismiss()) {
+          router.dismiss(2);
+        } else {
+          router.replace("/home");
+        }
+      } else if (from === "admin") {
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace("/admin/posts");
+        }
+      } else {
+        if (router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace("/home");
+        }
+      }
+    } catch (error) {
+      showMessage(
+        "Não foi possível excluir",
+        error instanceof Error
+          ? error.message
+          : "Tente novamente em instantes.",
+      );
+      setIsDeleting(false);
     }
   }
 
@@ -141,11 +195,12 @@ export default function EditPostScreen({ id }: EditPostScreenProps) {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView edges={["top", "left", "right"]} style={styles.container}>
       <View style={styles.header}>
         <Pressable
           accessibilityLabel="Voltar"
           accessibilityRole="button"
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           onPress={() => router.back()}
           style={({ pressed }) => [
             styles.backButton,
@@ -168,11 +223,13 @@ export default function EditPostScreen({ id }: EditPostScreenProps) {
           imageUrl: post.imageUrl ?? "",
           link: post.link ?? "",
         }}
+        isDeleting={isDeleting}
         isSubmitting={isSubmitting}
+        onDelete={confirmDelete}
         onSubmit={handleSubmit}
         submitLabel="Salvar alterações"
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -180,7 +237,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F4F8FF",
-    paddingTop: 48,
   },
   centeredContainer: {
     flex: 1,
@@ -192,8 +248,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
+    paddingTop: 12,
     paddingHorizontal: 20,
-    marginBottom: 12,
+    paddingBottom: 14,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2EBF6",
+    zIndex: 10,
+    elevation: 3,
   },
   backButton: {
     width: 36,
