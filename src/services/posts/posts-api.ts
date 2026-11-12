@@ -196,6 +196,34 @@ export async function getPosts(
   return { post: [], total: 0 };
 }
 
+// Busca em todas as publicações (título e conteúdo). A API devolve todos os resultados, sem paginação.
+export async function searchPosts(
+  keyword: string,
+  token?: string | null,
+): Promise<Post[]> {
+  const baseUrl = getApiBaseUrl();
+  const url = `${baseUrl}/posts/search?keyword=${encodeURIComponent(keyword)}`;
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "GET",
+      headers: buildHeaders(token),
+    });
+  } catch {
+    throw new Error(
+      "Não foi possível conectar à API de publicações. Verifique sua conexão.",
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(`Erro ao buscar publicações (código ${response.status}).`);
+  }
+
+  const data: unknown = await response.json();
+  return Array.isArray(data) ? (data as Post[]) : [];
+}
+
 export async function getPostById(
   id: string,
   token?: string | null,
